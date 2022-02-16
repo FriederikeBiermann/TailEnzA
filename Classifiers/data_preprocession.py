@@ -55,19 +55,15 @@ for enzyme in enzymes:
         if fastas_aligned_before==False:
             fragment_matrix=pd.DataFrame()
             seq_record_ids=[]
-            for seq_record in SeqIO.parse(dataset, "fasta"):
-           
+            for seq_record in SeqIO.parse(dataset, "fasta"):     
                  fewgaps = lambda x, y: -20 - y
                  specificgaps = lambda x, y: (-2 - y)
                  alignment = pairwise2.align.globalmc(model_proteins_for_alignment[enzyme], seq_record.seq, 1, -1, fewgaps, specificgaps)
                  fragment_matrix_for_record=fragment_alignment (alignment[0],splitting_lists[enzyme],fastas_aligned_before)
                  fragment_matrix=fragment_matrix.append(fragment_matrix_for_record, ignore_index = True)
                  seq_record_ids=seq_record_ids+[seq_record.id]
-    
         feature_matrix=featurize(fragment_matrix, permutations, fragments[enzyme], include_charge_features)
         feature_matrix["target"] = BGC_types[BGC_index]
-   
         complete_feature_matrix=complete_feature_matrix.append(feature_matrix, ignore_index = True)
     print (complete_feature_matrix)
-
     complete_feature_matrix.to_csv(path_complete_feature_matrix, index=False)     
