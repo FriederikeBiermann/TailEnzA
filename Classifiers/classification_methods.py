@@ -1,11 +1,11 @@
 import pandas as pd
 from sklearn.metrics import classification_report
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.metrics import multilabel_confusion_matrix
 from sklearn.model_selection import cross_val_score
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import train_test_split
 import pickle
+import pyplot as plt
 ros = RandomOverSampler(random_state=0)
 
 def create_training_test_set(path_feature_matrix, test_size):
@@ -23,13 +23,9 @@ def train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_da
     classifier = classifier.fit(x_train,y_train)
     #predict for test set
     test_predict_classifier=classifier.predict(x_test)
-    #predict for complete set
-    y_pred = classifier.predict(x_data)
     #calculate accuracy
     cross_validation_classifier = cross_val_score(classifier, x_data, y_data, cv=5, scoring='f1_macro')
     balanced_accuracy_classifier=balanced_accuracy_score(y_test, test_predict_classifier)
-    # creating a confusion matrix 
-    cm = multilabel_confusion_matrix(y_test, test_predict_classifier)
     #print all the scores
     print(enzyme," ",name_classifier," score:", classifier.score(x_test, y_test))
     print (enzyme," ",name_classifier," Balanced Accuracy Score:",balanced_accuracy_classifier)
@@ -47,8 +43,8 @@ def optimize_leaf_number(classifier,name_classifier, enzyme, x_data,x_train,y_tr
 
             classifier = classifier.fit(x_train,y_train)
             test_predict_classifier=classifier.predict(x_test)
-            balanced_accuracy_new=balanced_accuracy_score(y_test, test_predict_xtree)
-            new_line={'Minimum samples per leaf':minleaf, 'Balanced accuracy':balanced_accuracy_xtreenew}
+            balanced_accuracy_new=balanced_accuracy_score(y_test, test_predict_classifier)
+            new_line={'Minimum samples per leaf':minleaf, 'Balanced accuracy':balanced_accuracy_new}
             leafdiagr=leafdiagr.append(new_line, ignore_index=True)
             if balanced_accuracy_new>balanced_accuracy:
                 bestminleaf=minleaf

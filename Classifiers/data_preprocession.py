@@ -6,8 +6,6 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import AlignIO
-import re
-import numpy as np
 from feature_generation import *
 fastas_aligned_before=True
 include_charge_features=False
