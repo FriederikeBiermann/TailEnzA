@@ -127,11 +127,8 @@ def featurize(fragment_matrix, permutations, fragments, include_charge_features)
                 new_row =merge_two_dicts(new_row,{name_column:easysequence_fragment.count(motif)})
             if include_charge_features==True:
                 new_row=append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment)
-        feature_matrix=feature_matrix.append(new_row, ignore_index=True)
-
     if include_charge_features==True:
-        feature_matrix=sum_charge_features(feature_matrix)
-        
+        feature_matrix=sum_charge_features(feature_matrix,fragments)
     return feature_matrix
 
 def append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment):
@@ -163,3 +160,4 @@ def sum_charge_features(feature_matrix, fragments):
     feature_matrix['mean basic']=feature_matrix[basicrows].mean(axis=1)  
     feature_matrix['absolute acidic']=feature_matrix[absacidicrows].sum(axis=1)  
     feature_matrix['absolute basic']=feature_matrix[absbasicrows].sum(axis=1)
+    return feature_matrix

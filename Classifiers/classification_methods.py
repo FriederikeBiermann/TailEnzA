@@ -5,7 +5,8 @@ from sklearn.model_selection import cross_val_score
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import train_test_split
 import pickle
-import pyplot as plt
+import matplotlib.pyplot as plt
+from plot_figures import *
 ros = RandomOverSampler(random_state=0)
 
 def create_training_test_set(path_feature_matrix, test_size):
@@ -34,6 +35,9 @@ def train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_da
     #save trained classifier
     filename_classifier = foldernameoutput+enzyme+"_"+name_classifier+'_classifier.sav'
     pickle.dump(classifier, open(filename_classifier, 'wb'))
+    BGC_types=["ripp","nrp","pk"]
+    if name_classifier=="ExtraTreesClassifier":
+        plot_confusion_matrices(enzyme, classifier, x_test, y_test, BGC_types)
 def optimize_leaf_number(classifier,name_classifier, enzyme, x_data,x_train,y_train,x_test,y_test, foldernameoutput ):
 
         balanced_accuracy=0.50

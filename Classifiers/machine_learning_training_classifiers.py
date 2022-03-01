@@ -46,11 +46,10 @@ maxd=15
 # generate feature matrix with feature_generation.py first
 directory_feature_matrices="Classifiers/Toy_dataset/"
 foldername_output="Classifiers/Toy_dataset/"
-enzymes=["p450","YCAO"]
+enzymes=["p450","YCAO","SAM"]
 BGC_types=["ripp","nrp","pk"]
 for enzyme in enzymes:
     path_feature_matrix=directory_feature_matrices+enzyme+"_complete_feature_matrix.csv"
     x_train, x_test, y_train, y_test, x_data, y_data= create_training_test_set(path_feature_matrix, test_size)     
     for classifier,name_classifier in zip ( classifiers, names_classifiers):
         train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_data,y_data,x_train,y_train,x_test,y_test, foldername_output)
-        
