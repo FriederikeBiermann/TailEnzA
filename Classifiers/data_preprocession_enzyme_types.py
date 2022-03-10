@@ -14,7 +14,7 @@ foldernameoutput="Classifiers/Toy_dataset/Enzyme_recognition/"
 foldername_training_sets="Training_data/Toy_dataset/all"
 filename_permutations="permutations.txt"
 
-enzymes=["p450","YCAO","SAM"]
+enzymes=["p450","YCAO","SAM","Methyl"]
 
 
 

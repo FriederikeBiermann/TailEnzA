@@ -46,7 +46,7 @@ maxd=15
 # generate feature matrix with feature_generation.py first
 directory_feature_matrices="Classifiers/Toy_dataset/"
 foldername_output="Classifiers/Toy_dataset/"
-enzymes=["p450","YCAO","SAM"]
+enzymes=["p450","YCAO","SAM","Methyl"]
 BGC_types=["ripp","nrp","pk"]
 for enzyme in enzymes:
     path_feature_matrix=directory_feature_matrices+enzyme+"_complete_feature_matrix.csv"
