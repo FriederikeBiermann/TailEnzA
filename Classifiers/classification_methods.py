@@ -10,14 +10,15 @@ from plot_figures import *
 ros = RandomOverSampler(random_state=0)
 
 def create_training_test_set(path_feature_matrix, test_size):
+    # create training and test set from feature matrix
     feature_matrix=pd.read_csv(path_feature_matrix)
-    feature_matrix = feature_matrix.sample(frac = 1) 
+    feature_matrix = feature_matrix.sample(frac = 1)
     # define target and features
     x_data = feature_matrix.loc[:, feature_matrix.columns != 'target' ]
     y_data = feature_matrix['target']
     # split into training and test set
     x_train, x_test, y_train, y_test = train_test_split(x_data, y_data ,test_size = test_size, shuffle=True)
-    #resample to balance 
+    #resample to balance
     x_train, y_train = ros.fit_resample(x_train, y_train)
     return x_train, x_test, y_train, y_test, x_data, y_data
 def train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_data,y_data,x_train,y_train,x_test,y_test, foldernameoutput ):
@@ -54,8 +55,8 @@ def optimize_leaf_number(classifier,name_classifier, enzyme, x_data,x_train,y_tr
                 bestminleaf=minleaf
                 balanced_accuracy=balanced_accuracy_new
             print (leafdiagr)
-        print ("Best minimum samples per leaf:", bestminleaf) 
-    
+        print ("Best minimum samples per leaf:", bestminleaf)
+
         #plot diagram of best minleaf
         plt.plot('Minimum samples per leaf', 'Balanced accuracy', data=leafdiagr,color='black')
         plt.xlabel('Minimum samples per leaf')
@@ -78,8 +79,8 @@ def optimize_depth_classifier(classifier, name_classifier, enzyme, foldernameout
                 bestmaximum_depth=maximum_depth
                 balanced_accuracy=balanced_accuracy_new
 
-        print ("Best Max depth:", bestmaximum_depth) 
-    
+        print ("Best Max depth:", bestmaximum_depth)
+
         #plot diagram of best minleaf
         plt.plot('Maximal depth', 'Balanced accuracy', data=depthdiagr,color='black')
         plt.xlabel('Maximal depth')
@@ -87,5 +88,3 @@ def optimize_depth_classifier(classifier, name_classifier, enzyme, foldernameout
         plt.savefig(foldernameoutput+"_"+enzyme+"_"+name_classifier+"depthdiagr.png",format="png")
         plt.show()
         return bestmaximum_depth
-       
-    
