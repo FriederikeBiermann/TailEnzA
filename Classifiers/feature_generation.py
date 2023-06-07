@@ -69,27 +69,52 @@ def convert_splitting_list(splitting_list,index_reference):
     for fragment in splitting_list:
         converted_splitting_list.append([fragment[0],index_reference[fragment[1]][1],index_reference[fragment[2]-1][1]])
     return converted_splitting_list
-def split_alignment(alignment,fragment,fastas_aligned_before):
-    # split the aligned sequences at the positions determined by the splitting list
-    start=fragment[1]
-    end=fragment[2]
-    if fastas_aligned_before==False:
-        alignment=[alignment]
-    seqRecord_list_per_fragment=np.array([["",""]])
-    if fragment[0]=="begin":
-        start=1
-    if fragment[0]!="end":
-        for record in alignment:
-            subsequence=str(record.seq)[start-1:end].replace('-', '')
+# def split_alignment(alignment,fragment,fastas_aligned_before):
+#     # split the aligned sequences at the positions determined by the splitting list
+#     start=fragment[1]
+#     end=fragment[2]
+#     if fastas_aligned_before==False:
+#         alignment=[alignment]
+#     seqRecord_list_per_fragment=np.array([["",""]])
+#     if fragment[0]=="begin":
+#         start=1
+#     if fragment[0]!="end":
+#         for record in alignment:
+#             subsequence=str(record.seq)[start-1:end].replace('-', '')
 
-            seqRecord_list_per_fragment=np.append(seqRecord_list_per_fragment,[[record.id,subsequence]],axis=0)
+#             seqRecord_list_per_fragment=np.append(seqRecord_list_per_fragment,[[record.id,subsequence]],axis=0)
+#     else:
+#         for record in alignment:
+#             subsequence=str(record.seq)[start-1:].replace('-', '')
+#             seqRecord_list_per_fragment=np.append(seqRecord_list_per_fragment,[[record.id,subsequence]],axis=0)
+#     seqRecord_list_per_fragment=np.delete(seqRecord_list_per_fragment, 0, axis=0)
+
+#     return seqRecord_list_per_fragment
+
+def split_alignment(alignment, fragment, fastas_aligned_before):
+    # split the aligned sequences at the positions determined by the splitting list
+    start = fragment[1]
+    end = fragment[2]
+    if fastas_aligned_before == False:
+        alignment = [alignment]
+    seqRecord_list_per_fragment = []
+    if fragment[0] == "begin":
+        start = 1
+    if fragment[0] != "end":
+        for record in alignment:
+            subsequence = str(record.seq)[start-1:end].replace('-', '')
+
+            seqRecord_list_per_fragment.append(
+                [record.id, subsequence])
     else:
         for record in alignment:
-            subsequence=str(record.seq)[start-1:].replace('-', '')
-            seqRecord_list_per_fragment=np.append(seqRecord_list_per_fragment,[[record.id,subsequence]],axis=0)
-    seqRecord_list_per_fragment=np.delete(seqRecord_list_per_fragment, 0, axis=0)
+            subsequence = str(record.seq)[start-1:].replace('-', '')
+            seqRecord_list_per_fragment.append(
+                                                    [record.id, subsequence])
+    seqRecord_array_per_fragment = np.array(seqRecord_list_per_fragment)
 
-    return seqRecord_list_per_fragment
+    return seqRecord_array_per_fragment
+
 
 def fragment_alignment(alignment,splitting_list, fastas_aligned_before):
     # create a matrix from the splitted alignment
@@ -119,10 +144,33 @@ def fragment_alignment(alignment,splitting_list, fastas_aligned_before):
                     fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:,0]))
 
     return fragment_matrix
+
+# def featurize(fragment_matrix, permutations, fragments, include_charge_features):
+#     #create feature_matrix from fragment_matrix, count motifs in each fragemnt
+#     feature_matrix=pd.DataFrame()
+
+#     for index, row in fragment_matrix.iterrows():
+#         new_row={}
+#         for fragment in fragments:
+#             sequence_fragment=row[fragment]
+
+#             easysequence_fragment=easysequence(sequence_fragment)
+#             for motif in permutations:
+#                 name_column=motif+fragment
+#                 new_row =merge_two_dicts(new_row,{name_column:easysequence_fragment.count(motif)})
+
+#             if include_charge_features==True:
+#                 new_row=append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment)
+#         feature_matrix=feature_matrix.append(new_row, ignore_index=True)
+#     if include_charge_features==True:
+#         feature_matrix=sum_charge_features(feature_matrix,fragments)
+
+#     return feature_matrix 
+
 def featurize(fragment_matrix, permutations, fragments, include_charge_features):
     #create feature_matrix from fragment_matrix, count motifs in each fragemnt
     feature_matrix=pd.DataFrame()
-
+    new_rows =[]
     for index, row in fragment_matrix.iterrows():
         new_row={}
         for fragment in fragments:
@@ -131,14 +179,15 @@ def featurize(fragment_matrix, permutations, fragments, include_charge_features)
             easysequence_fragment=easysequence(sequence_fragment)
             for motif in permutations:
                 name_column=motif+fragment
-                new_row =merge_two_dicts(new_row,{name_column:easysequence_fragment.count(motif)})
+                new_row[name_column] = easysequence_fragment.count(motif)
 
             if include_charge_features==True:
                 new_row=append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment)
-        feature_matrix=feature_matrix.append(new_row, ignore_index=True)
+
+        new_rows += [new_row]
+    feature_matrix=feature_matrix.append(new_rows, ignore_index=True)
     if include_charge_features==True:
         feature_matrix=sum_charge_features(feature_matrix,fragments)
-
     return feature_matrix
 
 def append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment):

@@ -16,7 +16,7 @@ from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, AdaBo
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from classification_methods import *
-from plot_figures import *
+#from plot_figures import *
 
 names_classifiers = [
     "ExtraTreesClassifier",
@@ -44,8 +44,8 @@ test_size=0.5
 maxd=15
 # fill in names of files here!
 # generate feature matrix with feature_generation.py first
-directory_feature_matrices="Classifiers/Toy_dataset/Enzyme_recognition/"
-foldername_output="Classifiers/Toy_dataset/Enzyme_recognition"
+directory_feature_matrices="Classifiers/all_enzymes_AA_matrices/"
+foldername_output="Classifiers/all_enzymes_AA_matrices/"
 enzymes=["p450","YCAO","SAM","Methyl"]
 
 path_feature_matrix=directory_feature_matrices+"_complete_feature_matrix_enzymes.csv"
