@@ -1,0 +1,69 @@
+ID,description,window_start,window_end,score,filename
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",281101,291101,0.775,NC_010572.1_281101_291101_0.775.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",444916,454916,0.675,NC_010572.1_444916_454916_0.675.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",454964,464964,-0.965,NC_010572.1_454964_464964_-0.965.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",609128,619128,-0.698,NC_010572.1_609128_619128_-0.698.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",675159,685159,0.817,NC_010572.1_675159_685159_0.817.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",716159,726159,0.728,NC_010572.1_716159_726159_0.728.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",727542,737542,0.71,NC_010572.1_727542_737542_0.71.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",950358,960358,-0.786,NC_010572.1_950358_960358_-0.786.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1057966,1067966,0.876,NC_010572.1_1057966_1067966_0.876.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1248257,1258257,0.817,NC_010572.1_1248257_1258257_0.817.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1270423,1280423,0.701,NC_010572.1_1270423_1280423_0.701.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1279606,1289606,-1.698,NC_010572.1_1279606_1289606_-1.698.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1280856,1290856,-0.686,NC_010572.1_1280856_1290856_-0.686.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1501976,1511976,1.587,NC_010572.1_1501976_1511976_1.587.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1503243,1513243,0.758,NC_010572.1_1503243_1513243_0.758.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",1664350,1674350,0.849,NC_010572.1_1664350_1674350_0.849.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",3617360,3627360,-1.81,NC_010572.1_3617360_3627360_-1.81.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",3618619,3628619,-0.986,NC_010572.1_3618619_3628619_-0.986.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",3823868,3833868,-0.804,NC_010572.1_3823868_3833868_-0.804.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",3835155,3845155,-0.717,NC_010572.1_3835155_3845155_-0.717.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",3993502,4003502,-0.85,NC_010572.1_3993502_4003502_-0.85.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",4093388,4103388,-0.774,NC_010572.1_4093388_4103388_-0.774.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",5131085,5141085,-1.454,NC_010572.1_5131085_5141085_-1.454.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",5132406,5142406,-0.746,NC_010572.1_5132406_5142406_-0.746.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",5186387,5196387,-0.863,NC_010572.1_5186387_5196387_-0.863.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",6084884,6094884,0.846,NC_010572.1_6084884_6094884_0.846.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",7907263,7917263,0.926,NC_010572.1_7907263_7917263_0.926.gb
+NC_010572.1,"Streptomyces griseus subsp. griseus NBRC 13350, complete sequence",8157494,8167494,-0.914,NC_010572.1_8157494_8167494_-0.914.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,304200,314200,0.766,NZ_CP018074.1_304200_314200_0.766.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,448349,458349,0.778,NZ_CP018074.1_448349_458349_0.778.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,634154,644154,-0.679,NZ_CP018074.1_634154_644154_-0.679.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,736015,746015,0.9,NZ_CP018074.1_736015_746015_0.9.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,881011,891011,-0.694,NZ_CP018074.1_881011_891011_-0.694.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,942123,952123,-0.679,NZ_CP018074.1_942123_952123_-0.679.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,1378621,1388621,-0.826,NZ_CP018074.1_1378621_1388621_-0.826.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,2080900,2090900,-0.835,NZ_CP018074.1_2080900_2090900_-0.835.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,2263080,2273080,-0.71,NZ_CP018074.1_2263080_2273080_-0.71.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,3162892,3172892,0.764,NZ_CP018074.1_3162892_3172892_0.764.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,3717698,3727698,0.74,NZ_CP018074.1_3717698_3727698_0.74.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,5802572,5812572,0.741,NZ_CP018074.1_5802572_5812572_0.741.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6420361,6430361,0.833,NZ_CP018074.1_6420361_6430361_0.833.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6661621,6671621,-0.756,NZ_CP018074.1_6661621_6671621_-0.756.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6687624,6697624,0.845,NZ_CP018074.1_6687624_6697624_0.845.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6707370,6717370,-0.729,NZ_CP018074.1_6707370_6717370_-0.729.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6750259,6760259,-0.739,NZ_CP018074.1_6750259_6760259_-0.739.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6763094,6773094,-0.132,NZ_CP018074.1_6763094_6773094_-0.132.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6767389,6777389,0.684,NZ_CP018074.1_6767389_6777389_0.684.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,6835035,6845035,-0.855,NZ_CP018074.1_6835035_6845035_-0.855.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,7302225,7312225,-1.481,NZ_CP018074.1_7302225_7312225_-1.481.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,7303690,7313690,-0.702,NZ_CP018074.1_7303690_7313690_-0.702.gb
+NZ_CP018074.1,Streptomyces venezuelae strain NRRL B-65442 chromosome,8153640,8163640,-0.694,NZ_CP018074.1_8153640_8163640_-0.694.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",625127,635127,0.025,NC_003888.3_625127_635127_0.025.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",626369,636369,-0.736,NC_003888.3_626369_636369_-0.736.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",822061,832061,-0.997,NC_003888.3_822061_832061_-0.997.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",847649,857649,0.811,NC_003888.3_847649_857649_0.811.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",1278746,1288746,-0.795,NC_003888.3_1278746_1288746_-0.795.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",1740065,1750065,-0.813,NC_003888.3_1740065_1750065_-0.813.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",3137661,3147661,0.024,NC_003888.3_3137661_3147661_0.024.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",3138905,3148905,-0.678,NC_003888.3_3138905_3148905_-0.678.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",3394340,3404340,-0.783,NC_003888.3_3394340_3404340_-0.783.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",4143070,4153070,0.756,NC_003888.3_4143070_4153070_0.756.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",5682098,5692098,-0.739,NC_003888.3_5682098_5692098_-0.739.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",6970033,6980033,0.763,NC_003888.3_6970033_6980033_0.763.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",7768860,7778860,-0.682,NC_003888.3_7768860_7778860_-0.682.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",8232555,8242555,1.482,NC_003888.3_8232555_8242555_1.482.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",8233775,8243775,0.718,NC_003888.3_8233775_8243775_0.718.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",8258333,8268333,-0.792,NC_003888.3_8258333_8268333_-0.792.gb
+NC_003888.3,"Streptomyces coelicolor A3(2) chromosome, complete genome",8521684,8531684,-1.068,NC_003888.3_8521684_8531684_-1.068.gb
