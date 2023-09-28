@@ -17,12 +17,13 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
 
 #import antiSMASH DB CSV
-filename_csv="/home/friederike/Documents/Coding/TailEnzA_main/TailEnzA/Classifiers/Training_data/Dataset/antismash_db_all_pks.csv"
-output_folder="/home/friederike/Documents/Coding/TailEnzA_main/TailEnzA/Classifiers/Training_data/Dataset/PKS_genbank_files_antismash_DB/"
-input_data=pd.read_csv(filename_csv)
+filename_csv="/home/friederike/Documents/Coding/TailEnzA_main/TailEnzA/Classifiers/Training_data/Dataset/antismash_db_all_terpenes_remaining.csv"
+output_folder="/home/friederike/Documents/Coding/TailEnzA_main/TailEnzA/Classifiers/Training_data/Dataset/Terpenes_genbank_files_antismash_DB/"
+input_data=pd.read_csv(filename_csv, delimiter=",")
+#input_data=pd.read_csv(filename_csv, delimiter="\t")
 Entrez.email = "friederike@biermann-erfurt.de"
-allow_hybrids=False
-output_fasta=output_folder+"pks.fasta"
+allow_hybrids=True
+output_fasta=output_folder+"terpenes.fasta"
 output_fasta_handle = open(output_fasta, "w")
 def fetch_DNA(NCBI_accession):
     print(NCBI_accession)
@@ -60,7 +61,6 @@ def obtain_partial_Genbank(NCBI_accession,genome, begin_cluster, end_cluster):
     complete_sequence=genome['GBSeq_sequence']
     begin_cluster=int(begin_cluster)
     end_cluster=int(end_cluster)
-    print(type(begin_cluster),type(end_cluster))
     chosensequence=complete_sequence[begin_cluster:end_cluster].upper()
 
     for index in range(0, len(genome['GBSeq_feature-table'])+1):

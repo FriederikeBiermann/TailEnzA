@@ -1,9 +1,7 @@
 import pandas as pd
-from sklearn.metrics import classification_report
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import cross_val_score
+from sklearn.metrics import classification_report, balanced_accuracy_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from imblearn.over_sampling import RandomOverSampler
-from sklearn.model_selection import train_test_split
 import pickle
 import matplotlib.pyplot as plt
 from plot_figures import *

@@ -81,6 +81,7 @@ for enzyme in enzymes:
                  seq_record_ids=seq_record_ids+[seq_record.id]
         #obtain features from each fragment
         feature_matrix=featurize(fragment_matrix, permutations, fragments[enzyme], include_charge_features)
+        print (feature_matrix)
         #set true type of BGC for each BGC as target
         feature_matrix["target"] = BGC_types[BGC_index]
         complete_feature_matrix=complete_feature_matrix.append(feature_matrix, ignore_index = True)
