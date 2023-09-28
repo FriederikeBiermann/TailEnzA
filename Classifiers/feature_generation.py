@@ -69,6 +69,7 @@ def convert_splitting_list(splitting_list,index_reference):
     for fragment in splitting_list:
         converted_splitting_list.append([fragment[0],index_reference[fragment[1]][1],index_reference[fragment[2]-1][1]])
     return converted_splitting_list
+#             subsequence=str(record.seq)[start-1:end].replace('-', '')
 
 def split_alignment(alignment, fragment, fastas_aligned_before):
     # split the aligned sequences at the positions determined by the splitting list
@@ -79,6 +80,8 @@ def split_alignment(alignment, fragment, fastas_aligned_before):
     seqRecord_list_per_fragment = []
     if fragment[0] == "begin":
         start = 1
+<<<<<<< HEAD
+<<<<<<< HEAD
     if fragment[0] != "end":
         for record in alignment:
             if record.id != "Reference":

@@ -1,0 +1,900 @@
+LOCUS       NC_003888              20000 bp    dna              UNK 01-JAN-1980
+DEFINITION  Streptomyces coelicolor A3(2) chromosome, complete genome.
+ACCESSION   NC_003888
+VERSION     NC_003888.3
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     gene            1159..2211
+                     /locus_tag="SCO0797"
+                     /gene_synonym="SCF43.08"
+                     /db_xref="GeneID:1096220"
+     CDS             1159..2211
+                     /locus_tag="SCO0797"
+                     /gene_synonym="SCF43.08"
+                     /note="SCF43.08, possible integral membrane protein, len:
+                     350 aa. Contains possible membrane spanning hydrophobic
+                     domains and a TTA /leucine codon, possible target for bldA
+                     regulation."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625098.1"
+                     /db_xref="GeneID:1096220"
+                     /translation="MTDTSVRIDGNRLSLPGGATVRFIRTLRLPETGTHPLPPGLGEFP
+                     VRRVADYADRVPEAWRARGGVMLPVYLREAMWLSFAGTREPAALQVGVGKVCAVSGRPW
+                     SDRLSRDPQNYVVLPRQPWLDGINSGTGTVRQFVAVPLGMGASVEGQVTGEEVWGGVQL
+                     QAFTLNDTELARWREEERRRAETARRAARPGGALGAPAPASAPAAPGAAPAYGGAARPR
+                     SAPAMGLGVGGSMRQEVYRDQRPPTDWAKRPAGRVFVHLVTPPEWRRITGEAPPPSPVD
+                     RAAYTRAGLPWYDYYDQDAHDLAPTEPLRDVQPVGDWIGDDHEPWQPPAPHQVHPLGDA
+                     PGKPVQDGDW"
+     misc_feature    1645..1647
+                     /locus_tag="SCO0797"
+                     /gene_synonym="SCF43.08"
+                     /note="TTA /leucine codon, possible target for bldA
+                     regulation."
+     gene            2232..3467
+                     /locus_tag="SCO0798"
+                     /gene_synonym="SCF43.09"
+                     /db_xref="GeneID:1096221"
+     CDS             2232..3467
+                     /locus_tag="SCO0798"
+                     /gene_synonym="SCF43.09"
+                     /note="SCF43.09, hypothetical protein, len: 411 aa. Weakly
+                     similar to several proteins of undefined function e.g.
+                     Lactococcus lactis TR:O86271(EMBL:AJ001008) OrfB (341 aa),
+                     fasta scores opt: 579 z-score: 550.5 E(): 2.8e-23 31.1%
+                     identity in 347 aa overlap."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625099.1"
+                     /db_xref="GeneID:1096221"
+                     /translation="MREDGMDGADWSRRRLVGLLARTAAAAAALPAAACGGPAGTQAPA
+                     AAPTAPRASSGASGRARGASGRRPLLLGTYTSAEGGGRGIGLAEYDPATGRITGSGLLA
+                     EVDDPSYLAVHPDGRTLYAVNEREDGAVTAVRLSDHRVLGSRSTGGAAPCHLSVHPGGR
+                     WLFSANYGSGSVAVHPVDASGALGERTGLVTHATPPPGPGQRGPHAHQVVTAPDGAHVL
+                     AVDLGTDTVYTYRLDEGAGTLVEVSRARTRPGAGPRHLAFHPGGRHAYVANEVDNTVAV
+                     CAYDPGTGRLAVGEPQSTGAPPGGGTGANYPAQILVTSDGAYAFLANRGHDSVTRYAVE
+                     AEGARLRLLGAVPVGGDFPRQIAFSPDGGLLFAANQRSGTVSTFRVSAGDGGLRRTGEP
+                     FASPVAVCALPL"
+     gene            complement(3435..4160)
+                     /locus_tag="SCO0799"
+                     /gene_synonym="SCF43.10c"
+                     /db_xref="GeneID:1096222"
+     CDS             complement(3435..4160)
+                     /locus_tag="SCO0799"
+                     /gene_synonym="SCF43.10c"
+                     /note="SCF43.10c, unknown, len: 241 aa. Weakly similar to
+                     Mycobacterium tuberculosis TR:P96239(EMBL:Z83864)
+                     hypothetical 28.3 KD protein (258 aa), fasta scores opt:
+                     270 z-score: 339.5 E(): 1.6e-11 33.5% identity in 272 aa
+                     overlap."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625100.1"
+                     /db_xref="GeneID:1096222"
+                     /translation="MGDSHTWTATPGAAEQARSVLAAAWSCAVTAEGGREEFVGAHTVA
+                     DDGRVLLHVPEDSALLAAAVCAPRGEPSGVLEFADVAPVPVRSRIRARLWLAGWFAVTD
+                     GHLAFRPTRVVLRRPSGAVVVDVEEFAAAAPDPLALAEARLLTHLADCHDDAVQRLTRL
+                     VDPDSLHGAVRVRPLAVDRHGLTLRVERVRDHGDVRLPFHAPADEVAQLTERVHVLLAQ
+                     AGAVSCPRALQRQRTDGDG"
+     regulatory      complement(4165..4170)
+                     /regulatory_class="ribosome_binding_site"
+     gene            complement(4268..4885)
+                     /locus_tag="SCO0800"
+                     /gene_synonym="SCF43.11c"
+                     /db_xref="GeneID:1096223"
+     CDS             complement(4268..4885)
+                     /locus_tag="SCO0800"
+                     /gene_synonym="SCF43.11c"
+                     /note="SCF43.11c, possible TetR-family transcriptional
+                     regulatory protein, len: 205 aa. Similar to several
+                     including: Escherichia coli SW:ACRR_ECOLI (EMBL:U00734)
+                     potential AcrAB operon repressor AcrR (215 aa), fasta
+                     scores opt: 176 z-score: 223.7 E(): 4.5e-05 27.5% identity
+                     in 189 aa overlap and Streptomyces coelicolor TR:Q9XAE5
+                     (EMBL:AL079356) hypothetical 24.2 KD protein SC6G9.37 (217
+                     aa), fasta scores opt: 282 z-score: 351.9 E(): 3.3e-12
+                     33.2% identity in 196 aa overlap. Contains a Pfam match to
+                     entry PF00440 tetR, Bacterial regulatory proteins, tetR
+                     family with the helix-turn-helix motif situated between
+                     residues 43..64 (+5.17 SD)."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="TetR family transcriptional regulator"
+                     /protein_id="NP_625101.1"
+                     /db_xref="GeneID:1096223"
+                     /translation="MRGMAANQGERIRRRLSTGERREQLLSVGARLFSESPYDEVWIEQ
+                     VAEIAGVSRGLLYHYFPNKRDFFAAVVERESERMLRMTAAVPGVPVREQLTAGLDAYLE
+                     YVRAHAHGYRAFHRADAAGDRAVRRVYQKALAAQERQILAALAADPEFGPAFEERGDVR
+                     LAVRGWLAFTTAVCLEWLRDPEPAREQVRDLCARALLGAVAP"
+     misc_feature    complement(4673..4813)
+                     /locus_tag="SCO0800"
+                     /gene_synonym="SCF43.11c"
+                     /note="Pfam match to entry PF00440 tetR, Bacterial
+                     regulatory proteins, tetR family, score 35.90, E-value
+                     3.1e-08"
+     gene            5000..6583
+                     /locus_tag="SCO0801"
+                     /gene_synonym="SCF43.12"
+                     /db_xref="GeneID:1096224"
+     CDS             5000..6583
+                     /locus_tag="SCO0801"
+                     /gene_synonym="SCF43.12"
+                     /note="SCF43.12, possible cytochrome P450, len: 527 aa.
+                     Highly similar to the N-terminal P450 domain of Bacillus
+                     megaterium SW:CPXB_BACME (EMBL:J04832) cytochrome
+                     P450(BM-3) (1048 aa), fasta scores opt: 789 z-score: 839.8
+                     E():0 41.9% identity in 497 aa overlap. Also weakly similar
+                     to Eukaryotic cytochrome P450 proteins e.g. Homo sapiens
+                     (Human) SW:CPF3_HUMAN(EMBL:D12620) cytochrome P450 4F3
+                     (leukotriene-B4 20-monooxygenase) (EC 1.14.13.30) (520 aa),
+                     fasta scores opt: 553 z-score: 592.7 E(): 1.2e-25 29.2%
+                     identity in 390 aa overlap. Contains Pfam match to entry
+                     PF00067 p450, Cytochrome P450 and a Prosite hit to PS00086
+                     Cytochrome P450 cysteine heme-iron ligand signature."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="cytochrome P450"
+                     /protein_id="NP_625102.1"
+                     /db_xref="GeneID:1096224"
+                     /translation="MAQTAREPARDGLPKGFRSAELGWPELHRIPHPPYRLPLLGDVVG
+                     ASRRTPMQDSLRYARRLGPIFRRRAFGKEFVFVWGAALAADLADEARFAKHVGLGVANL
+                     RPVAGDGLFTAYNHEPNWQLAHDVLAPGFSREAMAGYHVMMLDVAARLTGHWDLAEASG
+                     RAVDVPGDMTKLTLETIARTGFGHDFGSFERSRLHPFVTAMVGTLGYAQRLNTVPAPLA
+                     PWLLRDASRRNAADIAHLNRTVDDLVRERRANGGTGGGTGSGSGSGDLLDRMLETAHPR
+                     TGERLSPQNVRRQVITFLVAGHETTSGALSFALHYLAQHPDVAARARAEVDRVWGDTEA
+                     PGYEQVAKLRYVRRVLDESLRLWPTAPGFAREAREDTVLGGTHPMRRGAWALVLTGMLH
+                     RDPEVWGADAERFDPDRFDAKAVRSRAPHTFKPFGTGARACIGRQFALHEATLVLGLLL
+                     RRYELRPEPGYRLRVTERLTLMPEGLRLHLVRRTAAAPAPGRRTAAPGAADDAGDTVSA
+                     PGCPVHRAGD"
+     misc_feature    5087..6472
+                     /locus_tag="SCO0801"
+                     /gene_synonym="SCF43.12"
+                     /note="Pfam match to entry PF00067 p450, Cytochrome P450,
+                     score 231.70, E-value 6.2e-71"
+     misc_feature    6296..6325
+                     /locus_tag="SCO0801"
+                     /gene_synonym="SCF43.12"
+                     /note="PS00086 Cytochrome P450 cysteine heme-iron ligand
+                     signature"
+     gene            complement(6545..7393)
+                     /locus_tag="SCO0802"
+                     /gene_synonym="SCF43.13c"
+                     /db_xref="GeneID:1096225"
+     CDS             complement(6545..7393)
+                     /locus_tag="SCO0802"
+                     /gene_synonym="SCF43.13c"
+                     /note="SCF43.13c, unknown, len: 282 aa. Highly similar to
+                     several including: Bacillus megaterium
+                     TR:O24772(EMBL:AB005787) oxetanocin A resistance protein,
+                     OxrA (185 aa), fasta scores opt: 632 z-score: 753.8 E():0
+                     56.8% identity in 176 aa overlap and Bacillus subtilis
+                     SW:YYBG_BACSU(EMBL:D26185) hypothetical 31.3 KD protein
+                     (279 aa), fasta scores opt: 1070 z-score: 1267.0 E():0
+                     59.0% identity in 266 aa overlap. Contains 2xPfam matches
+                     to entry PF00805 Pentapeptide, Pentapeptide repeats (8
+                     copies)"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625103.1"
+                     /db_xref="GeneID:1096225"
+                     /translation="MREHTADRTRTRARAELRGDCASCFGLCCAALPFARSADFAIDKD
+                     AGTPCPNLRTDHRCGIHATLRERGFTGCTVYDCFGAGQRVSQLTFGGRDWRAGPPEQRR
+                     RMFDVFPVVRQLHELLWYLTEALTLPAARPVHADLRGALADTERLAGGTPEELAGLDVA
+                     AHRQRVNVLLLRTSELVRAGTRGRKKNRRNADLMGARLKGADLAGADLRGAYLIAADLT
+                     GADLRGADLIGADLRDADLTDADLTGAFFLTQPQVNAARGGPGTGLPDSVTRPVHWTAG
+                     R"
+     misc_feature    complement(6635..6754)
+                     /locus_tag="SCO0802"
+                     /gene_synonym="SCF43.13c"
+                     /note="Pfam match to entry PF00805 Pentapeptide,
+                     Pentapeptide repeats (8 copies), score 56.70, E-value
+                     5e-13"
+     repeat_region   complement(6656..6806)
+                     /locus_tag="SCO0802"
+                     /gene_synonym="SCF43.13c"
+                     /note="degenerate repeat region containing 8x
+                     (C/G)(G/T)ACCT repeats"
+     misc_feature    complement(6755..6865)
+                     /locus_tag="SCO0802"
+                     /gene_synonym="SCF43.13c"
+                     /note="Pfam match to entry PF00805 Pentapeptide,
+                     Pentapeptide repeats (8 copies), score 9.10, E-value 0.4"
+     regulatory      complement(7395..7399)
+                     /regulatory_class="ribosome_binding_site"
+     gene            complement(7451..8425)
+                     /locus_tag="SCO0803"
+                     /gene_synonym="SCF43.14c"
+                     /db_xref="GeneID:1096226"
+     CDS             complement(7451..8425)
+                     /locus_tag="SCO0803"
+                     /gene_synonym="SCF43.14c"
+                     /note="SCF43.14c, possible RNA polymerase sigma factor,
+                     len: 330 aa. Similar to Mycobacterium smegmatis TR:O05767
+                     (EMBL:U87307) extracytoplasmic function alternative sigma
+                     factor SigE (204 aa), fasta scores opt: 234 z-score: 278.1
+                     E(): 4.1e-08 29.1% identity in 175 aa overlap. Also highly
+                     similar to many other sigma factors e.g. Streptomyces
+                     coelicolor TR:Q9X8P3 (EMBL:AL049754) RNA polymerase sigma
+                     factor SCH10.04C (294 aa), fasta scores opt: 915 z-score:
+                     1056.2 E():0 52.9% identity in 293 aa overlap."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="RNA polymerase sigma factor"
+                     /protein_id="NP_625104.1"
+                     /db_xref="GeneID:1096226"
+                     /translation="MRGQGDMRGERDVRGEQDARRQRDARGQQRLAERFEEHRGQLKAV
+                     AYRMLGSLAEAEDAVQEAWLRLDRSEADGIDNLGAWLTTVTGRICLDLLRSRTARREEP
+                     MTEGFDSFVPDPVLRALPRADPEAEALHTDSVGIALLVVLERLEPAERLAFVLHDMFAV
+                     PFDDIAGVVERSPAATRQLASRARRRVRDATPAAEPDLGRQRRVVEAFLAASRAGDFEA
+                     LVSVLHPDVVLRADAGAPARGVAASKVVRGARTVATGAFHFRHLAPLARVVLVNDAVGT
+                     VAVSDGRPVSVTYVTVADGLITGLYILSDPERLAGLDVSGLEA"
+     gene            complement(8448..9191)
+                     /locus_tag="SCO0804"
+                     /gene_synonym="SCF43.15c"
+                     /db_xref="GeneID:1096227"
+     CDS             complement(8448..9191)
+                     /locus_tag="SCO0804"
+                     /gene_synonym="SCF43.15c"
+                     /note="SCF43.15c, unknown, len: 247 aa. Weakly similar to
+                     several proteins of undefined function e.g. Pyrococcus
+                     horikoshii TR:O58235(EMBL:AP000002) (272 aa) fasta scores
+                     opt:323 z-score: 406.6 E(): 2.9e-15 28.2% identity in 227
+                     aa overlap."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625105.1"
+                     /db_xref="GeneID:1096227"
+                     /translation="MTEPTITQLEPMPGDWRRALAVVAHPDDLEYGCAAAIAAWTDEGR
+                     EVAYVLATRGEAGIDTLAPAECAPLREREQRASAAVVGVSEVEFLDHRDGVVEYGTALR
+                     RDIAAAIRRHRPELVITMNHRDTWGGVAWNTPDHVAVGRATLDAAADAGNRWIFPELTD
+                     RGLEPWNGVRWVAVAGSSSPTHAVDATPGMERAVRSLLEHRTYIEVLTEEDPETYVRGF
+                     LTGFAEAAGERFGGRPAVTFEVFAR"
+     gene            complement(9262..10563)
+                     /locus_tag="SCO0805"
+                     /gene_synonym="SCF43.16c"
+                     /db_xref="GeneID:1096228"
+     CDS             complement(9262..10563)
+                     /locus_tag="SCO0805"
+                     /gene_synonym="SCF43.16c"
+                     /note="SCF43.16c, possible prolyl aminopeptidase, len: 433
+                     aa. Highly similar to several peptidases including:
+                     Aeromonas sobria SW:PIP_AERSO(EMBL:D30714) proline
+                     iminopeptidase (EC 3.4.11.5) (prolyl aminopeptidase) (424
+                     aa), fasta scores opt: 954 z-score: 1113.1 E():0 48.6%
+                     identity in 428 aa overlap and Hafnia alvei
+                     TR:P94800(EMBL:D61383) prolyl aminopeptidase (427 aa),
+                     fasta scores opt: 1208 z-score: 1408.6 E():0 47.2% identity
+                     in 432 aa overlap. Contains a Pfam match to entry PF00561
+                     abhydrolase, alpha/beta hydrolase fold."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="prolyl aminopeptidase"
+                     /protein_id="NP_625106.1"
+                     /db_xref="GeneID:1096228"
+                     /translation="MSVSYRQPGVVLTDRRFTVPLDHADPTGETIELYAREAVASDKAD
+                     QDLPWLVYLQGGPGGKADRFVGRPAWFGRALKEYRVLLLDQRGTGASTPASRQTLPLRG
+                     GPAEQADYLAHFRADAIVRDCEAIRPQVTGGAPWTVLGQSFGGFCTVAYLSLAPEGLSA
+                     ALITGGLPSLDAHADDVYRAAYPRIERKVVAHYARYPQDVERARRIADHLLTRDVVLPN
+                     GYRLTVEAFQSLGIMLGGGEGSHRLHFLLEDAFVRTANGHELSDAFQEQAQGLLSYAGR
+                     PLYALVHEAIYGQDARPTDWSAERVRAEFPRFDAAKALAGDEPLLFTGESIHPWMFDCD
+                     PALRPLRETAELLAARTDWTPLYDPARLAANEVPAAAAVYHDDMYVDTAHALTTARAIR
+                     GLRTWVTDEFEHDGVRAGGPRVLDRLLALARDEA"
+     misc_feature    complement(9556..10329)
+                     /locus_tag="SCO0805"
+                     /gene_synonym="SCF43.16c"
+                     /note="Pfam match to entry PF00561 abhydrolase, alpha/beta
+                     hydrolase fold, score 29.30, E-value 5.6e-05"
+     gene            complement(10691..11716)
+                     /locus_tag="SCO0806"
+                     /gene_synonym="SCF43.17c"
+                     /db_xref="GeneID:1096229"
+     CDS             complement(10691..11716)
+                     /locus_tag="SCO0806"
+                     /gene_synonym="SCF43.17c"
+                     /note="SCF43.17c, possible LacI-family transcriptional
+                     regulatory protein, len: 341 aa. Similar to many regulators
+                     including: Escherichia coli SW:RBSR_ECOLI (EMBL:M13169)
+                     ribose operon repressor, RbsR (329 aa), fasta scores opt:
+                     646 z-score: 726.9 E(): 0 35.9% identity in 334 aa overlap
+                     and Streptomyces coelicolor TR:Q9Z509 (EMBL:AL035591)
+                     transcriptional regulator (LacI family) SCC54.16 (368 aa),
+                     fasta scores opt: 659 z-score: 740.7 E(): 0 39.2% identity
+                     in 337 aa overlap. Contains a Pfam matches to entries
+                     PF00532 Peripla_BP_like, Periplasmic binding proteins and
+                     LacI family and Pfam match to entry PF00356 lacI, Bacterial
+                     regulatory proteins, lacI family. Also contains a Prosite
+                     hit to PS00356 Bacterial regulatory proteins, lacI family
+                     signature. A helix-turn-helix motif situated between
+                     residues 5..26 (+6.47 SD)"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="LacI family transcriptional regulator"
+                     /protein_id="NP_625107.1"
+                     /db_xref="GeneID:1096229"
+                     /translation="MAHSVGIKDVARAAGVSVGTVSNVINRPDTVATETRARVLSAIDR
+                     LGYVRSESARQLRAGRSRIMGLLVLDMGNPFFVDVARGAERAAREAGLGVMVCNSAQNP
+                     GEEAEYLSLFAEQRVRGVLLTPADATGRNIEGFRRHNIPFVLVDRVAEGTTECSVSVDD
+                     VAGGALAVRHLVDAGHRSIAYVSGPPGLNQVRDRRTGALAALAEAGLGPDALRELPTER
+                     LDVAAGRDAGARLLGLAERPTAVFCANDLLALGVLQAMYAAGVGVPDDLAIVGYDDIEF
+                     AAAAAVPLTSVRQPAVTMGAMAAELLLEETELEGTDRTHPHRRVVLQPELVVRRSSLAA
+                     R"
+     misc_feature    complement(10808..11536)
+                     /locus_tag="SCO0806"
+                     /gene_synonym="SCF43.17c"
+                     /note="Pfam match to entry PF00532 Peripla_BP_like,
+                     Periplasmic binding proteins and LacI family., score
+                     139.80, E-value 4.8e-38"
+     misc_feature    complement(11627..11710)
+                     /locus_tag="SCO0806"
+                     /gene_synonym="SCF43.17c"
+                     /note="Pfam match to entry PF00356 lacI, Bacterial
+                     regulatory proteins, lacI family, score 37.10, E-value
+                     5.4e-09"
+     misc_feature    complement(11642..11698)
+                     /locus_tag="SCO0806"
+                     /gene_synonym="SCF43.17c"
+                     /note="PS00356 Bacterial regulatory proteins, lacI family
+                     signature"
+     regulatory      complement(11726..11731)
+                     /regulatory_class="ribosome_binding_site"
+     gene            complement(11806..12126)
+                     /locus_tag="SCO0807"
+                     /gene_synonym="SCF43.18c"
+                     /db_xref="GeneID:1096230"
+     CDS             complement(11806..12126)
+                     /locus_tag="SCO0807"
+                     /gene_synonym="SCF43.18c"
+                     /note="SCF43.18c, unknown, len: 107 aa. Highly similar to
+                     several proteins of unknown function e.g. Escherichia coli
+                     SW:YIIL_ECOLI(EMBL:L19201) hypothetical 12.3 KD protein
+                     YiiL (104 aa), fasta scores opt: 174 z-score: 248.9 E():
+                     1.8e-06 31.1% identity in 106 aa overlap and Bacillus
+                     subtilis TR:O05263(EMBL:Z93938) hypothetical 12.6 KD
+                     protein YulD (104 aa), fasta scores opt: 254 z-score: 355.8
+                     E(): 1.9e-12 43.4% identity in 106 aa overlap."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="NP_625108.1"
+                     /db_xref="GeneID:1096230"
+                     /translation="MQRVCFLLKVRRDRIAEYRERHAAVWPEMCEALSATGWHNYSLFL
+                     RDDGLLVGYLETEDFAAARSGMEATEVNARWQAEMGPLFESLDGDRPDEAMKPLTEVFH
+                     LA"
+     regulatory      complement(12136..12139)
+                     /regulatory_class="ribosome_binding_site"
+     gene            complement(12153..13235)
+                     /locus_tag="SCO0808"
+                     /gene_synonym="SCF43.19c"
+                     /db_xref="GeneID:1096231"
+     CDS             complement(12153..13235)
+                     /locus_tag="SCO0808"
+                     /gene_synonym="SCF43.19c"
+                     /note="SCF43.19c, possible solute-binding lipoprotein, len:
+                     360 aa. Similar to many bacterial extracellular
+                     solute-binding proteins including: Bacillus subtilis
+                     SW:RBSB_BACSU(EMBL:Z92953) D-ribose-binding protein
+                     precursor, RbsB (305 aa), fasta scores opt: 234 z-score:
+                     252.1 E(): 1.2e-06 24.9% identity in 277 aa overlap and
+                     Streptomyces coelicolor TR:CAB56679(EMBL:AL121596) possible
+                     solute-binding lipoprotein SCF51A.27 (359 aa), fasta scores
+                     opt: 1487 z-score: 1547.8 E(): 0 63.1% identity in 360 aa
+                     overlap. Contains an appropriately positioned Prosite hit
+                     to PS00013 Prokaryotic membrane lipoprotein lipid
+                     attachment site and a possible N-terminal signal sequence."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="solute-binding lipoprotein"
+                     /protein_id="NP_625109.1"
+                     /db_xref="GeneID:1096231"
+                     /translation="MRKSSIRRTCAALAAVTSLALAATACGGTTKEDVKDEGGKAAAAG
+                     KADPNAATKKGLTVGFLPKQVNNPYFTVADKGGEKALKELGSSYKEVGTSSGTDTAGQV
+                     SYVNTLTQQQVDAIAVSAQDPGALCTALKQAMKNDIKVVTYDSDTNPECRNAFISQASA
+                     DDIGRTQVQQMAEQIGNKGEIAILSAAQTATNQNAWIEIMKDELKDPKYKDVKLVKVAY
+                     GDDDAQKSFQQTQGLLQEHPNLKGIISPTTVGIKAAAQYLSGSKYKGKVKLTGLGTPND
+                     MRKYVKNGTVEAFELWDPAKLGELAARTAVALSSGQITGKEGETFKAGAMGEYTIGKNG
+                     VIDLGKPTVFTADNVDQFDF"
+     misc_feature    complement(13158..13190)
+                     /locus_tag="SCO0808"
+                     /gene_synonym="SCF43.19c"
+                     /note="PS00013 Prokaryotic membrane lipoprotein lipid
+                     attachment site"
+     gene            complement(13477..14490)
+                     /locus_tag="SCO0809"
+                     /gene_synonym="SCF43.20c"
+                     /db_xref="GeneID:1096232"
+     CDS             complement(13477..14490)
+                     /locus_tag="SCO0809"
+                     /gene_synonym="SCF43.20c"
+                     /note="SCF43.20c. possible ABC transporter permease, len:
+                     337 aa. Similar to many permeases e.g. Bacillus subtilis
+                     SW:RBSC_BACSU(EMBL:Z25798) ribose transport system permease
+                     RbsC (323 aa), fasta scores opt: 561 z-score: 603.2 E():
+                     3.3e-26 33.9% identity in 295 aa overlap. Also similar to
+                     the adjoining CDS, SCF43.21c, possible ABC transporter
+                     permease (346 aa), fasta scores opt: 545 z-score: 528.3
+                     E(): 5e-24 33.4% identity in 335 aa overlap. Contains
+                     multiple possible membrane spanning hydrophobic domains."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="ABC transporter permease"
+                     /protein_id="NP_625110.1"
+                     /db_xref="GeneID:1096232"
+                     /translation="MADTSLTRAVRWDTVVGALLVVVLLLSFGFVDGFGNALNLSFLIG
+                     NTLPIALIALPMTLLVVSGEIDLSVASTAGLSGAVMGALWNQGMTIETIIPICLLLGVV
+                     CGLVNGLLVTRLGLPSLAVTIGTMAAYRGIAQIVLGSDAVTDFPSQYLDFAAGRIDGTF
+                     VPYAFLPFLVLLAVAVVALHAMPFGRSLFAIGASEEAARFAGIRVKRQKLILFTLTGLM
+                     SSLTGVFWALHYASARYDNATGLELSVVAAVLLGGIDFDGGKGTLGGAIAGVFLLGALQ
+                     NVMSLQDVSAQSQIVVTGVLLVLSVLGPRVARQISLARAGRGAAPAPPSKAPAPTP"
+     gene            complement(14483..15523)
+                     /locus_tag="SCO0810"
+                     /gene_synonym="SCF43.21c"
+                     /db_xref="GeneID:1096233"
+     CDS             complement(14483..15523)
+                     /locus_tag="SCO0810"
+                     /gene_synonym="SCF43.21c"
+                     /note="SCF43.21c. possible ABC transporter permease, len:
+                     346 aa. Similar to many permeases e.g. Bacillus subtilis
+                     SW:RBSC_BACSU(EMBL:Z25798) ribose transport system permease
+                     RbsC (323 aa), fasta scores opt: 591 z-score: 644.0 E():
+                     1.7e-28 33.4% identity in 302 aa overlap and Escherichia
+                     coli SW:RBSC_ECOLI(EMBL:L10328) ribose transport system
+                     permease RbsC (321 aa), fasta scores opt: 596 z-score:
+                     649.4 E(): 8.6e-29 34.5% identity in 304 aa overlap. Also
+                     similar to the adjoining CDS, SCF43.20c, possible ABC
+                     transporter permease (346 aa), fasta scores opt: 545
+                     z-score: 528.3 E(): 5e-24 33.4% identity in 335 aa overlap.
+                     Contains multiple possible membrane spanning hydrophobic
+                     domains."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="ABC transporter permease"
+                     /protein_id="NP_625111.1"
+                     /db_xref="GeneID:1096233"
+                     /translation="MTVTAPEKAPAADVPKAGATRLVDRIFKMRELAILLVFLVMIGIT
+                     QAGNSEFLSEQGIKDLLLNATILVLVATGQSLVVITRNVDLSVGSTLGISAFAAGTYLQ
+                     GGGNPVVAVLLAVLTGVGFGLLNGALVSLGQVPALVVTLGTLYIIRGIDSIWVGSRQIT
+                     AADLPGGFVDFGSGGISAVPWLAMIALAVLVATAYYLKHFGSGRELYALGSNPEAARLA
+                     GIPVRKRILAAYTFCGALAGLAGALYLARFGNVDSGTGNGYELTVVSAVVVGGVVFTGG
+                     SGSVYGAALGALLLTSINSVLPALGVSSVWVLAINGILLILAIAVDRIVALRVANALKK
+                     RNARHG"
+     regulatory      complement(14501..14504)
+                     /regulatory_class="ribosome_binding_site"
+                     /locus_tag="SCO0810"
+                     /gene_synonym="SCF43.21c"
+     gene            complement(15520..17037)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /db_xref="GeneID:1096234"
+     CDS             complement(15520..17037)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /note="SCF43A.01c, probable ABC transporter ATP-binding
+                     protein, partial CDS, len: >104 aa; similar to many e.g.
+                     SW:ARAG_ECOLI (EMBL:X06091), araG, Escherichia coli
+                     L-arabinose transport ATP-binding protein (504 aa), fasta
+                     scores; opt: 305 z-score: 368.0 E(): 3.6e-13, 45.8%
+                     identity in 96 aa overlap. Similar to many others from
+                     S.coelicolor e.g. TR:O50504 (EMBL:AL009199) S.coelicolor
+                     probable ABC-transport system ATP binding protein (260 aa)
+                     (55.2% identity in 96 aa overlap). Contains Pfam match to
+                     PF00005 ABC_tran, ABC transporter and PS00017
+                     ATP/GTP-binding site motif A (P-loop); SCF43.22c, possible
+                     ABC transporter, ATP-binding component, partial CDS, len: >
+                     434 aa. Highly similar to many including: Escherichia coli
+                     SW:RBSA_ECOLI(EMBL:M13169) ribose transport ATP-binding
+                     protein RbsA (501 aa), fasta scores opt: 1301 z-score:
+                     1408.5 E(): 0 45.7% identity in 431 aa overlap and
+                     Streptomyces coelicolor TR:O69942(EMBL:AL023862) ABC
+                     transporter ATP-binding protein SC3F9.02 (505 aa), fasta
+                     scores opt: 1179 z-score: 978.7 E():0 46.0% identity in 428
+                     aa overlap. Contains 2x Pfam matches to entry PF00005
+                     ABC_tran, ABC transporter and a Prosite hit to PS00211 ABC
+                     transporters family signature."
+                     /codon_start=1
+                     /transl_table=11
+                     /product="ABC transporter ATP-binding protein"
+                     /protein_id="NP_733516.1"
+                     /db_xref="GeneID:1096234"
+                     /translation="MTHPSDTGSAPVLALRDVSKSFGAVRALRDVSLELFPGEVHALAG
+                     ENGAGKSTLIKTLAGVHRPDAGHVLLDGAPVVFHGPGDARDAGIAVIYQEPTLFPDLSI
+                     AENIFMGRQPRRALGRIDHKATHDATAALMLRLGVELDPDRPARGLSIADQQIVEIAKA
+                     LSFDARVLIMDEPTAALTGSEVARLFGVVRTLRDQGAAVLFISHRLEEIFHICARVTTL
+                     RDGAWIASEPLEGMTEDDLVRRMVGRDLDELYPKQEVTPGERALSVRRLTREGVFTDVS
+                     FEVRRGEIVALAGLVGAGRTEVARAVFGVDRWDAGEVEVDGKPLVNGAPSTAMAAGLAL
+                     VPEDRRAQGLVMDMSIERNIGLTGLRTTVKAGLVDRGAERSRSLDWAVKLQVKYARIAD
+                     TVATLSGGNQQKVVLAKWLATGPKVLIVDEPTRGIDVGTKAEVHRLLSQLAADGVAVLM
+                     ISSDLPEVLGMADRVLVMHEGRLTAEISRTDATEETVMAAATGRAAA"
+     regulatory      complement(15532..15536)
+                     /regulatory_class="ribosome_binding_site"
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+     misc_feature    complement(15601..16179)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /note="Pfam match to entry PF00005 ABC_tran, ABC
+                     transporter, score 111.90, E-value 1.2e-29"
+     misc_feature    complement(15784..15828)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /note="PS00211 ABC transporters family signature"
+     misc_feature    complement(16363..16821)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /note="Pfam match to entry PF00005 ABC_tran, ABC
+                     transporter, score 56.10, E-value 7.4e-13"
+     misc_feature    complement(16882..16905)
+                     /locus_tag="SCO0811"
+                     /gene_synonym="SCF43.22c; SCF43A.01c"
+                     /note="PS00017 ATP/GTP-binding site motif A (P-loop)"
+     regulatory      17302..17306
+                     /regulatory_class="ribosome_binding_site"
+                     /note="possible RBS"
+     gene            17314..18474
+                     /locus_tag="SCO0812"
+                     /gene_synonym="SCF43A.02"
+                     /db_xref="GeneID:1096235"
+     CDS             17314..18474
+                     /locus_tag="SCO0812"
+                     /gene_synonym="SCF43A.02"
+                     /note="SCF43A.02, possible sugar isomerase, len: 386 aa;
+                     weakly similar to many xylose isomerases (divergent at N-
+                     and C-termini) e.g. SW:XYLA_AMPSP (EMBL:M15050), XylA,
+                     Ampullariella sp. xylose isomerase (394 aa), fasta scores;
+                     opt: 189 z-score: 229.6 E(): 1.8e-05, 26.9% identity in 219
+                     aa overlap"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="sugar isomerase"
+                     /protein_id="NP_625112.1"
+                     /db_xref="GeneID:1096235"
+                     /translation="MTELAAVKAALKTQAVETPSWAYGNSGTRFKVFAQPGVPRDPFEK
+                     LDDAAKVHEFTGAAPTVALHIPWDRVEDYAALAAHAEKRGVRIGAINSNTFQDDDYRLG
+                     SICHPDAAVRRKAVDHLLECVDIMDATGSRDLKLWFADGTNYPGQDDIRSRQDRLAEGL
+                     AEVYERLGEGQRMLLEYKLFEPAFYTTDVPDWGTAYAHCLKLGEKAQVVVDTGHHAPGT
+                     NIEFIVATLLREGKLGGFDFNSRFYADDDLMVGAADPFQLFRIMYEVVRGGGFTSDVAF
+                     MLDQCHNIEAKIPAIIRSVMNVQEATAKALLVDGTALAEAQAAGDVLEANAVLMDAYNT
+                     DVRPLLREVREESGLDPEPMKAYRSCGWAEKVVAERIGGQQAGWGA"
+ORIGIN
+        1 gcgctgctgg tcgtccaggt caccctgtac gccacgctga agatgagctt ccgccgggtg
+       61 aacgccgtgg tcgcgggtgt cctggtcgcg atcgccttca gtcagctggt cgggctcagc
+      121 tggtggagcc tcgccctgat catcgtggcc gcgctgggcg tcgggcacct ggtgcgcgcc
+      181 gaggagttca ccgccgaggt ggcgatcagc gcgatgctgg tgctcggcgt cacctcgcac
+      241 gggagcctgg cctgggcccg ggtggtggag acgctgatcg gggcgatcgt cggcctcgtc
+      301 ttcaacctga tcctcgcacc tccggtgtgg gtggagcagg ccggggagtc cgtcgtgggg
+      361 ctggcccggc aggtgcgcca actgctgctg cgcatgggcg aggaggccgc cggcagcacg
+      421 ccgttccacc aggcggcggc ccggctgcac gaggcccgcc ggctcgacca cgacatcggc
+      481 gaggtggacg aggacctgcg ccaggccgag gacagcctgc ggttcaatcc ccgggtgcgc
+      541 gaggggctgc tccaccgggt cgtgctccgt accggcctgg acaccctgga gatctgcacg
+      601 gtggtcatgc gggtcctcgc gcgcagcttc accgacctgg ccaaggagcg ggagccggag
+      661 cccctgttcg cgccggagac gggcgccgcc gtccagcagc tgctgtccga gatcgccgac
+      721 gccgtggtca gcttctcggt cctggtcacc agcaacgcca gcgagaacgc cgagtccgcg
+      781 gaggagcgcc tggccaccga gctgcgccag gccgcggcca cccgggaccg gctggccgac
+      841 ctgctgctgg aggaggtccg gcgcgacgcg acccagtggc agctgcgggg cgcggtgctg
+      901 gccgaggtga accggatcat cgacgagatg gacaccgagc accgctcccg ccggctcctg
+      961 gaggagctgg accgccacac gcgtgagcag cgggagcgca tgccgcggct gacccggctg
+     1021 cgggaccggg cgcgcgaccg gctgcgggcc gggccgcgca ggcggaaccg cgacaccgcc
+     1081 gcgcggcgtt cctcttgagg aaggacgaag cgcgcgcggc cggcgaaggc gcgtgaacgg
+     1141 cgaatgaggg gcgttcggat gaccgacacc agtgtgcgga tcgacgggaa ccggctgtcg
+     1201 ctgccgggcg gggcgacggt ccgcttcata cgcaccctgc ggctgcccga gacgggcacg
+     1261 catccgctgc cgcccgggct cggcgagttc ccggtccgcc gggtcgccga ctacgccgac
+     1321 cgtgtgcccg aggcgtggcg ggcgcggggc ggcgtgatgc tgccggtgta cctgcgtgag
+     1381 gccatgtggc tgagcttcgc gggcactcgg gagcccgccg cgcttcaggt gggagtgggc
+     1441 aaggtgtgcg cggtctcggg caggccctgg agcgaccggc tgtcccggga tccgcagaac
+     1501 tacgtggtcc ttccccgcca gccctggctg gacggcatca actccggaac cggcacggtc
+     1561 cgtcagttcg tggcggtgcc gctcggcatg ggggcgagtg tcgagggcca ggtcaccggc
+     1621 gaggaggtct ggggaggcgt ccagttacag gcgttcaccc tcaatgacac cgagctggcc
+     1681 cgctggcgcg aggaggagcg gcgccgtgcg gagacggccc gcagggcggc ccgtccgggc
+     1741 ggggccctcg gcgctccggc accggcgtcg gcaccggccg ccccgggcgc ggccccggcg
+     1801 tacggcggtg cggcccggcc ccggtcggcg cccgccatgg gtctgggggt cggcggctcc
+     1861 atgcgccagg aggtgtaccg cgaccagcgg ccgccgacgg actgggccaa gcgcccggcg
+     1921 ggccgggtct tcgtgcacct ggtgacgccg cccgagtggc gccgcatcac cggcgaggcg
+     1981 ccgccgccgt ccccggtgga ccgggccgcg tacacccggg ccggcctgcc ctggtacgac
+     2041 tactacgacc aggacgccca cgacctcgcg cccaccgagc cgttgcggga cgtgcagccg
+     2101 gtcggggact ggatcggcga cgaccacgag ccctggcagc cgcccgcgcc ccaccaggtc
+     2161 cacccgctgg gggacgcgcc gggcaagccg gtgcaggacg gggactggta gcggcgcgag
+     2221 gggcggtacg ggtgcgggag gacggcatgg acggggccga ctggagcagg cggcgactgg
+     2281 tcgggctcct cgcccggacc gccgccgcgg cggcggcact ccccgcggcg gcgtgcggcg
+     2341 gcccggcggg gactcaggcg ccggccgcgg cgcccaccgc gccccgggcg agcagcggtg
+     2401 cgtccggcag ggcgcggggg gcctccggcc ggcgcccgct cctcctcggc acctacacct
+     2461 ccgccgaggg cggcggccgg ggcatcgggc tcgcggagta cgaccccgcg acgggccgga
+     2521 tcaccgggag cggcctcctc gcggaggtcg acgacccctc ctacctggcg gtgcatcccg
+     2581 acggccggac cctgtacgcg gtgaacgagc gcgaggacgg ggcggtgacc gccgtccggc
+     2641 tgtcggacca cagggtgctg ggcagccgga gcaccggcgg cgcggcgccc tgccacctct
+     2701 cggtgcaccc cggcgggcgc tggctgttca gcgccaacta cggctccgga agcgtcgccg
+     2761 tacacccggt cgacgcctcc ggcgcactgg gagaacgcac cggcctggtc acgcacgcca
+     2821 ctcccccgcc gggcccggga cagcggggcc cgcacgccca ccaggtcgtc accgccccgg
+     2881 acggggccca tgtcctcgcc gtggacctcg gcacggacac cgtgtacacc taccgtctgg
+     2941 acgagggcgc ggggaccctc gtggaggtct cgcgggcccg gacccggccg ggcgccggtc
+     3001 cccggcacct cgccttccac cccggcggac gccacgccta tgtcgccaac gaggtcgaca
+     3061 acaccgtcgc ggtctgcgcg tacgacccgg ggacgggacg gctggccgtc ggcgagccgc
+     3121 agtccaccgg ggcgccaccg ggcgggggga ccggcgccaa ctacccggcg cagatcctgg
+     3181 tgacgtccga cggcgcgtac gccttcctcg ccaaccgggg gcacgacagc gtcacgcggt
+     3241 acgcggtgga ggcggagggc gcccggctcc ggctcctcgg cgccgtgccg gtgggcggcg
+     3301 acttcccccg gcagatcgcc ttctccccgg acggcgggct gctgttcgcg gccaaccagc
+     3361 ggtccggcac cgtcagtacg ttccgggtga gcgcgggcga cggcggactg cggcgcacgg
+     3421 gagagccctt cgcctcaccc gtcgccgtct gtgcgctgcc gctgtagggc ccgcggacag
+     3481 gagacggcgc ccgcctgcgc gaggagcacg tgcacccgct ccgtgagctg tgcgacctcg
+     3541 tcggcgggcg cgtggaacgg caggcgtacg tcgccgtggt cacggacgcg ttcgacccgc
+     3601 agggtcaggc cgtgccggtc gacggcgagc ggccgcaccc ggaccgctcc gtgcaggctg
+     3661 tccgggtcga cgagccgggt cagccgctgc acggcgtcgt cgtggcagtc ggcgagatgg
+     3721 gtcagcagcc gcgcctccgc cagggccagc ggatcgggcg ccgcggcggc gaactcctcg
+     3781 acgtcgacca ccacggcgcc ggagggccgc cgcagcacca cgcgggtggg ccggaaggcc
+     3841 aggtgcccgt ccgtcacggc gaaccagccg gcgagccaga gccgggccct gatccggctc
+     3901 cgcaccggga cgggcgccac gtcggcgaac tccagcacgc cggacggctc tccgcggggc
+     3961 gcgcacaccg ccgcggcgag cagcgcgctg tcctcgggca cgtgcaggag cacccggccg
+     4021 tcgtcggcca cggtgtgcgc gccgacgaac tcctcgcggc cgccctccgc ggtcaccgcg
+     4081 caggaccagg cggcggcgag cacggaacgg gcctgttccg ccgcgccggg cgttgccgtc
+     4141 caggtgtggc tgtcacccat cccaacctcc gttcacgatt cattaggtaa ggctcaccta
+     4201 acctagcgga gatcggggag tgcgccaacc acgacaaccc ctcgaaccgg catccggacc
+     4261 ggcgccgtca gggcgcgacg gcccccagca gcgcccgcgc gcacaggtcc cgcacctgct
+     4321 cgcgggcggg ctccggatcc cgcagccact ccaggcacac cgcggtggtg aaggccagcc
+     4381 agccgcgcac cgcgagccgc acgtcgccgc gttcctcgaa ggccgggccg aactccgggt
+     4441 cggcggcgag ggcggcgagg atctgccgct cctgcgcggc gagcgccttc tggtagaccc
+     4501 ggcgcaccgc ccggtcaccg gccgcgtcgg cgcggtggaa ggcgcggtag ccgtgcgcgt
+     4561 gggcccggac gtactccagg tacgcgtcga ggcccgcggt gagctgctca cggaccggga
+     4621 cgccgggcac ggccgccgtc atccgcagca tgcgctcgct ctcgcgctcg acgaccgccg
+     4681 cgaagaagtc ccgcttgttc gggaagtagt ggtacagcag cccgcgggag acaccggcga
+     4741 tctcggcgac ctgctcgatc cagacctcgt cgtaggggct ctccgagaac agccgcgcgc
+     4801 ccaccgagag caactgctcc cggcgctcgc ccgtgctgag ccggcggcgg atgcgctccc
+     4861 cctggttcgc ggccatgccc cgcaccttac ttgacgcggg ttcaacaacg ggtcgagact
+     4921 ggggcgcgct attgaatcca tgtacaacac gctcgcctcg gctcgtgcaa cacgccgctg
+     4981 cgtcaaggga gatcgcgtca tggcccagac agcgagggaa ccggcccggg acggactgcc
+     5041 gaagggcttc cgcagcgccg agctgggctg gcccgaactg caccgcatcc cgcacccccc
+     5101 gtaccggctg cccctgctcg gagacgtcgt gggagcgagc aggcgcaccc cgatgcagga
+     5161 ctcgctgcgg tacgcgcgac gactggggcc gatattccgg cggcgggcct tcggcaagga
+     5221 gttcgtgttc gtgtggggtg ccgccctcgc cgccgacctg gcggacgagg cgcggttcgc
+     5281 caagcacgtg ggcctggggg tggccaacct gcgtccggtg gccggggacg ggctgttcac
+     5341 ggcgtacaac cacgagccca actggcagct cgcgcacgac gtgctggcgc ccggcttcag
+     5401 ccgcgaggcc atggcggggt accacgtgat gatgctggac gtggccgcgc ggctcaccgg
+     5461 ccactgggac ctggccgagg cgtcgggccg ggcggtggac gtgccgggcg acatgaccaa
+     5521 gctgacgctg gagaccatcg cgcgcaccgg tttcggccac gacttcggct ccttcgaacg
+     5581 ctcccgcctc caccccttcg tcaccgcgat ggtgggcacg ctcggctacg cgcagcgcct
+     5641 caacaccgtg cccgcgccgc tcgccccctg gctgctgcgt gacgcgagcc gccgcaacgc
+     5701 cgccgacatc gcccacctca accgcacggt cgacgacctc gtccgtgaac gccgggcgaa
+     5761 cggcggcacg ggcggcggaa ccggcagcgg cagcggcagc ggcgacctgc tcgaccggat
+     5821 gctggagacg gcccatccca ggaccggtga gcggctgtcg ccccagaacg tccgccggca
+     5881 ggtcatcacc ttcctggtcg ccggtcacga gaccacctcg ggcgcgctct ccttcgccct
+     5941 gcactacctc gcccagcacc ccgacgtcgc ggcccgggcc cgcgccgagg tggaccgggt
+     6001 gtggggcgac accgaggcac ccggctacga gcaggtggcc aaactgcgct acgtgcgccg
+     6061 ggtgcttgac gagtcgctgc ggctgtggcc gaccgcgccg ggattcgcgc gcgaggcccg
+     6121 cgaggacacg gtgctcggcg gtacgcatcc gatgcgccgc ggggcctggg cgctggtgct
+     6181 cacgggcatg ctgcaccgcg atcccgaggt gtggggcgcg gacgccgagc ggttcgaccc
+     6241 ggaccgcttc gacgcgaagg ccgtgcggtc gcgcgccccg cacacgttca agccgttcgg
+     6301 gaccggggcg cgggcgtgca tcgggcggca gttcgcgctg cacgaggcca cgctggtcct
+     6361 cgggctgctg ctgcgccgct acgagctgcg gccggagccc ggctaccggc tgcgggtgac
+     6421 cgagcggctg acgctgatgc cggaggggct gcgcctgcac ctggtccggc ggaccgcggc
+     6481 cgcgccggcg cccggtcgcc gcacggccgc cccgggggcg gccgacgatg ccggggacac
+     6541 cgtctcagcg cccggctgtc cagtgcaccg ggcgggtgac tgagtccggc aggccggtgc
+     6601 cggggccgcc cctggccgcg ttgacctgcg gctgggtcag gaagaaggcg cccgtcaggt
+     6661 ccgcgtcggt gaggtcggcg tcgcgcaggt ccgcgccgat caggtcggcg ccccgcaggt
+     6721 cggcgccggt gaggtcggcg gcgatgaggt aggcgccgcg cagatcggca cccgcgaggt
+     6781 cggcgccctt gagacgggcg cccatcaggt cggcgttgcg gcggttcttc ttccggccgc
+     6841 gggtgccggc ccggaccagc tcgctggtgc gcagcaggag cacgttgacc cgctgccggt
+     6901 gtgcggccac gtcgaggccg gccagctcct cgggggtccc cccggcgagg cgttcggtgt
+     6961 cggcgagggc accgcgcagg tcggcgtgga ccgggcgggc ggcgggcagg gtcagcgcct
+     7021 cggtcaggta ccagagcagc tcgtgcagtt ggcggacgac cgggaacacg tcgaacatgc
+     7081 ggcggcgctg ctccggcggg cccgcgcgcc agtcccggcc gccgaaggtg agctgcgaga
+     7141 cccgttgtcc cgcgccgaag cagtcgtaga ccgtgcagcc ggtgaagccg cgctcccgca
+     7201 gcgtcgcgtg gatgccgcag cggtggtcgg tgcggaggtt cgggcagggt gttccggcgt
+     7261 ccttgtcgat ggcgaagtcc gccgagcggg cgaacggcag ggcggcgcag cacaggccga
+     7321 agcagctcgc gcagtcgccg cgcagttccg cccgggctcg tgtccgagtc cggtccgccg
+     7381 tgtgttctcg catgtcaccg aggatacggt ccgccgccgc gcggggtggt gggtggcccc
+     7441 gcgcggccgg tcaggcctcc agcccggaca cgtccaaccc ggccagccgc tcggggtcgg
+     7501 acaggatgta caggccggtg atgaggccgt cggcgacggt gacgtaggtg accgacacgg
+     7561 gacgtccgtc ggacaccgcg acggtgccga ccgcgtcgtt gaccaggacg acgcgggcga
+     7621 gaggcgcgag gtggcggaag tggaacgccc cggtggcgac cgtccgcgct ccccgcacca
+     7681 ccttggacgc cgcgacgccc cgggccggcg cgcccgcgtc ggcccgcagc accacgtccg
+     7741 ggtggaggac ggacaccagc gcctcgaagt caccggcgcg gctggcggcg aggaacgcct
+     7801 ccaccacccg gcgctgacgg ccgaggtccg gttcggcggc gggggtggcg tcgcgcaccc
+     7861 ggcgccgggc ccggctggcg agctgcctgg tggcggccgg gctgcgctcg acgacccccg
+     7921 cgatgtcgtc gaagggcacg gcgaacatgt cgtgcaggac gaacgccagc cgctcggccg
+     7981 gttccagccg ctccaggacc accagcaggg cgatgcccac cgagtcggtg tgcagtgcct
+     8041 ccgcctccgg gtccgcccgg ggcagggccc gcagcacggg gtcgggcacg aaggagtcga
+     8101 agccctcggt catcggctcc tcgcggcgcg cggtgcggga gcgcagcagg tcgaggcaga
+     8161 tccggccggt cacggtggtc agccaggcgc cgaggttgtc gatgccgtcc gcctcggagc
+     8221 ggtcgagccg cagccaggcc tcctgcacgg cgtcctccgc ctcggccagg gagccgagca
+     8281 tgcggtaggc caccgccttg agctgcccgc ggtgctcctc gaaacgctcc gcgagccgct
+     8341 gctgtccccg cgcgtcccgt tgccgccgcg cgtcctgttc cccccgcacg tcccgttctc
+     8401 cccgcatgtc gccctgtccc cgcatgtcct gctcccccgt catgccgcta ccgggcgaag
+     8461 acttcgaagg tcaccgccgg ccttccgccg aaccgctccc ccgcggcctc ggcgaagccg
+     8521 gtgaggaacc cgcgcacata cgtctccggg tcctcctcgg tcagcacctc gatgtaggtg
+     8581 cggtgttcga gcagcgagcg caccgcccgc tccattcccg gggtggcgtc cacggcgtgg
+     8641 gtgggcgagg aggagccggc gaccgcgacc cagcgcaccc cgttccaggg ctccaggccc
+     8701 cggtcggtca gctccgggaa gatccaccgg ttgccggcgt cggccgccgc gtcgagcgtg
+     8761 gcgcggccga cggcgacgtg gtccggggtg ttccaggcga cgccgcccca ggtgtcccga
+     8821 tggttcatgg tgatgaccag ttcgggccgg tggcggcgga tcgcggcggc gatgtcgcgg
+     8881 cgcagcgcgg tgccgtattc gacgacaccg tcccggtggt cgaggaattc cacctcgctc
+     8941 accccgacga cggcggcgct cgcccgctgc tcccgctcac gcagcggggc gcactcggcg
+     9001 ggcgccagcg tgtcgatgcc ggcctcgccc ctggtcgcga gcacgtaggc gacctcgcgg
+     9061 ccctcgtcgg tccaggccgc gatcgccgcc gcgcagccgt actccaggtc gtccgggtgg
+     9121 gccacgacgg cgagggcgcg gcgccagtcg ccgggcatgg gctccagttg cgtgatcgtc
+     9181 ggctccgtca tgcccgcaca ttaacccgcg ccaccggcct gccacccgga gattccaccc
+     9241 ggacgtcgcg cccggcgtcg ttcaggcctc gtcgcgggcg agcgcgagca gccggtccag
+     9301 gacgcgcggg ccgccggccc gcacaccgtc gtgctcgaac tcgtcggtga cccaggtgcg
+     9361 caggccccgg atcgcgcggg cggtggtcag cgcgtgggcg gtgtcgacgt acatgtcgtc
+     9421 gtggtagacg gctgcggcgg ccggcacctc gttggcggcg aggcgggccg ggtcgtacag
+     9481 cggcgtccag tcggtgcggg cggcgagcag ttcggccgtc tcgcgcagcg ggcgcagggc
+     9541 cgggtcgcag tcgaacatcc aggggtggat ggactcgccg gtgaagagca gcggttcgtc
+     9601 gcccgcgagg gccttggcgg cgtcgaagcg cgggaactcg gcgcgcaccc gctcggcgga
+     9661 ccagtcggtg ggccgggcgt cctggccgta gatggcctcg tggaccaggg cgtacagcgg
+     9721 acggccggcg tacgacagga ggccctgcgc ctgctcctgg aaggcgtcgg agagttcgtg
+     9781 tccgttcgcg gtgcggacga aggcgtcctc cagcaggaag tgcagccggt ggctgccctc
+     9841 gccgccgccg agcatgatgc cgagggactg gaaggcctcc acggtgaggc ggtagccgtt
+     9901 cggcaggacc acgtcgcggg tcagcaggtg gtcggcgatg cggcgggcgc gctcgacgtc
+     9961 ctgcgggtag cgggcgtagt gcgcgacgac cttgcgctcg atgcgggggt aggcggcgcg
+    10021 gtagacgtcg tccgcgtggg cgtccaggga gggcaggccg ccggtgatca gggcggcgct
+    10081 caggccctcg ggggccagcg acaggtaggc gacggtgcag aagccgccga agctctggcc
+    10141 gaggacggtc cagggggcgc cgccggtgac ctgggggcgg atggcctcgc agtcgcgcac
+    10201 gatggcgtcg gcccggaagt gcgcgaggta gtcggcctgc tcggcggggc cgccgcgcag
+    10261 cgggagcgtc tggcggctgg ccggggtgga ggcgccggtg ccgcgctggt ccaggagcag
+    10321 gacgcggtac tccttgaggg cccggccgaa ccaggcgggc cggccgacga aacggtccgc
+    10381 cttaccgccg gggccgccct ggaggtagac cagccagggc aggtcctggt cggccttgtc
+    10441 gctcgcgacg gcttcgcggg cgtacagctc gatcgtctcc ccggtggggt cggcgtgatc
+    10501 gaggggcacg gtgaaacggc ggtcggtgag gacgacgcct ggctggcggt agctgacgct
+    10561 caaggggtct cccggggcgg acggatctgg cggccgattc tttcggccgc gtcccagttc
+    10621 agcacaccgt cctgcggccg ccgacccccg ggatcatgaa atcgtttcgg acggcccact
+    10681 gaacggccgg tcagcgggcg gcgaggctgg agcgccgcac caccagttcg ggctggagga
+    10741 cgacccgccg gtgcgggtgg gtccggtccg tgccctccag ctcggtctcc tccaggagca
+    10801 gttcggccgc catggcgccc atggtcacgg cgggctggcg cacggaggtg agcgggaccg
+    10861 ccgcggcggc ggcgaactcg atgtcgtcgt agcccacgat cgcgaggtcg tcggggacgc
+    10921 cgaccccggc ggcgtacatg gcttgcagga cgccgagggc gagcaggtcg ttggcgcaga
+    10981 agacggcggt cggccgctcg gcgagcccca gcaggcgggc gccggcgtcg cggcccgcgg
+    11041 cgacgtcgag gcgctcggtg ggcagttcgc gcagcgcgtc ggggccgagc ccggcctcgg
+    11101 cgagcgcggc gagggcgccg gtgcggcggt cgcgcacctg gttgaggccg ggcgggccgc
+    11161 tgacgtaggc gatggagcgg tgcccggcgt ccacgaggtg gcggacggcc agcgcgccgc
+    11221 ccgcgacgtc gtcgaccgag accgagcact cggtggtgcc ctcggcgacg cggtcgacga
+    11281 ggacgaaggg gatgttgtgg cgccggaagc cctcgatgtt gcggccggtg gcgtcggcgg
+    11341 gggtgagcag gacgccgcgg acccgctgct cggcgaagag cgagaggtac tcggcctcct
+    11401 cgcccgggtt ctgcgcgctg ttgcagacca tcacgccgag cccggcctca cgggcggccc
+    11461 gctcggcacc gcgggccacg tcgacgaaga acgggttgcc catgtccagg acgagcagcc
+    11521 ccatgatgcg gctgcgtccg gcgcgcagtt ggcgtgcgga ctcgctgcgg acgtagccca
+    11581 gccggtcgat cgcggacagc acccgcgccc gggtctcggt cgcgacggtg tcggggcggt
+    11641 tgatgacgtt ggagaccgtg cccacggaaa ctccggcggc gcgggcgacg tccttgatac
+    11701 ccacggaatg ggccatcggg cagggacctc cgaggtcgaa gtgggtgtgg ggggcggccg
+    11761 cgggaccttc acacagtacc cgggccgccc cctgcggggc ctgagtcagg cgaggtggaa
+    11821 cacctcggtg aggggtttca tcgcctcgtc ggggcggtcc ccgtcgaggg actcgaacag
+    11881 cgggcccatc tccgcctgcc agcgggcgtt cacctcggtg gcctccatgc cggaccgggc
+    11941 ggcggcgaag tcctcggtct ccagatagcc gacgagcagg ccgtcgtcgc gcaggaagag
+    12001 cgagtagttg tgccagccgg tggcggagag cgcctcgcac atctccggcc acaccgcggc
+    12061 gtggcgttcg cggtactcgg cgatgcggtc ccttcggacc ttgagcagga aacagacgcg
+    12121 ctgcatggac tgccgctccc gtacgttcgt gactagaagt cgaactggtc gacgttgtcg
+    12181 gcggtgaaca cggtcggctt gccgaggtcg atcacaccgt tcttgccgat ggtgtactcg
+    12241 cccatggcgc cggccttgaa ggtctcgccc tccttgccgg tgatctgccc ggaggacagg
+    12301 gctacggcgg tgcgcgcggc cagctcgccg agctttgccg ggtcccacag ctcgaacgcc
+    12361 tcgacggtgc cgttcttgac gtacttgcgc atgtcgttgg gggtgccgag gccggtcagc
+    12421 ttgaccttgc ccttgtactt ggagccggac aggtactggg cggcggcctt gatgccgacg
+    12481 gtggtcgggg agatgatccc cttcaggttc gggtgctcct ggagcaggcc ctgggtctgc
+    12541 tggaaggact tctgggcgtc gtcgtcgccg taggcgacct tgaccagctt gacgtccttg
+    12601 tacttcgggt ccttcagctc gtccttcatg atctcgatcc aggcgttctg gttcgtcgcg
+    12661 gtctgcgcgg cggacaggat cgcgatctcg cccttgttgc cgatctgctc ggccatctgc
+    12721 tgcacctggg tgcggccgat gtcgtcggcg gaggcctggg agatgaaggc gttgcggcac
+    12781 tcggggttgg tgtccgagtc gtaggtgacg accttgatgt cgttcttcat cgcctgcttg
+    12841 agcgcggtgc acagggcgcc cgggtcctgc gcggagacgg cgatggcgtc gacctgctgc
+    12901 tgggtgagcg tgttgacgta ggagacctgg ccggcggtgt cggtgccgct ggaggtgccg
+    12961 acctccttgt agctggagcc cagctccttc agggccttct cgccgccctt gtcggcgacg
+    13021 gtgaagtagg ggttgttgac ctgcttgggc aggaagccga cggtcagccc cttcttcgtc
+    13081 gcggcgttcg ggtcggcctt gcccgcggcg gcggccttgc cgccctcgtc cttgacgtcc
+    13141 tccttcgtgg tgccgccgca ggcggtggcg gccagggcga gggaggtgac ggcggcgagg
+    13201 gccgcacagg tacggcggat ggacgacttg cgcatggtgg gttccttacg agggtggacg
+    13261 gagtcgggga cggggttggg tcctgtcgtc accttcccgt cgtccgcccg aagggcgggc
+    13321 tcggcggcgt caggtgcgtg ctctgggggt ccccccggcc ggaggctggg ggagtgccgg
+    13381 gcgtcgaccg gcgtactggt tgtacgtggt cggtgcccgg tggggcgaga gtgcgtgcat
+    13441 ggcgtcgccg agcagacggg aatgtgacga cagggcctaa ggggtggggg cgggcgcctt
+    13501 ggacgggggc gccggtgccg ccccgcgtcc ggccctcgcg agggagatct gccgtgcgac
+    13561 gcggggaccg agcacggaga ggacgagcag gacgccggtg acgacgatct gcgactgggc
+    13621 ggagacgtcc tggaggctca tgacgttctg cagcgcgccg agcaggaaca cgcccgcgat
+    13681 cgccccgccg agcgtgccct tgccgccgtc gaagtcgatg ccgcccagga gcacggcggc
+    13741 gacgacggac agttcgaggc cggtggcgtt gtcgtagcgg gcgctggcgt agtgcagggc
+    13801 ccagaagacg ccggtgaggg aggacatcag gccggtcagc gtgaacagga tcagcttctg
+    13861 ccgcttgacc cggatgccgg cgaagcgcgc ggcctcctcg ctggcgccga tggcgaacag
+    13921 cgaccggccg aacggcatgg cgtgcagggc gacgacggcg acggccagca gcacgaggaa
+    13981 cggcaggaag gcgtacggga cgaaggtgcc gtcgatgcgt ccggccgcga agtccaggta
+    14041 ctgcgagggg aagtcggtga ccgcgtcgga gccgagcacg atctgcgcga tgccccggta
+    14101 ggcggccatg gtgccgatgg tgacggcgag ggagggcagt ccgaggcggg tgaccagcag
+    14161 gccgttgacc agaccgcaga ccacgccgag cagcaggcag atcgggatga tcgtctcgat
+    14221 ggtcatgccc tggttccaca gggcgcccat caccgcgccg gacaggcccg cggtggaggc
+    14281 caccgacagg tcgatctcgc cggagacgac cagcagcgtc atcggcaggg cgatgagcgc
+    14341 gatcggcagc gtgttgccga tcaggaagga caggttgagg gcgttgccga acccgtcgac
+    14401 gaagccgaag gagagcagca ggacgaccac gagcagggca ccgacgaccg tgtcccagcg
+    14461 gacggcgcgc gtcagggagg tgtcagccat ggcgggcgtt cctcttcttc agggcgttgg
+    14521 ccacgcgcag cgcgacgatc cggtcgacgg cgatggcgag gatgagcagg atgccgttga
+    14581 tggccagcac ccacacggag ctgacgccga gggcgggcag cacgctgttg atcgaggtca
+    14641 gcagcagcgc gccgagggcc gcgccgtaga cgctgccgga gccgccggtg aagacgacgc
+    14701 cgccgaccac cacggcgctg acgacggtca gttcgtagcc gttgccggtg cccgagtcga
+    14761 cgttgccgaa gcgggccagg tagagggcgc cggcgagtcc ggcgagggcg ccgcagaagg
+    14821 tgtaggcggc caggatccgc ttgcggaccg ggatgccggc cagccgggcg gcctccgggt
+    14881 tggagccgag ggcgtacagc tcgcgtccgc tgccgaagtg cttgaggtag tacgccgtgg
+    14941 cgacgagcac cgccagggcg atcatggcca gccagggcac ggcggagatg ccgccggagc
+    15001 cgaagtcgac gaacccgccg ggcaggtcgg ccgcggtgat ctgccgggag ccgacccaga
+    15061 tggagtcgat gccgcggatg atgtacaggg tgccgagggt gacgaccagg gcgggcacct
+    15121 ggccgaggct gaccagcgcg ccgttgagca gtccgaatcc gacgcccgtc agcacggcga
+    15181 gcagcacggc cacgacgggg ttgccgccgc cctggaggta ggtgccggcg gcgaaggcgc
+    15241 tgatgccgag ggtggagccg acggacaggt cgacgttgcg ggtgatgacg accagggact
+    15301 gtccggtggc gaccaggacc aggatggtcg cgttcagcag gaggtccttg atgccctgct
+    15361 cggacaggaa ctcgctgttg ccggcctggg tgatgccgat catcaccagg aagacgagca
+    15421 ggatggccag ttcgcgcatc ttgaagatgc ggtccaccag ccgggtggcg ccggccttcg
+    15481 gcacgtcggc cgcgggcgcc ttctccggtg cggtgaccgt catgcggcgg ccctccccgt
+    15541 cgctgcggcc atcacggtct cctcggtggc gtcggtgcgg gatatctcgg cggtcagtcg
+    15601 gccctcgtgc atcaccagga cgcggtcggc catgccgagc acctcgggca ggtcggagga
+    15661 gatcatcagg acggccacgc cgtcggcggc gagctgcgag aggagccggt gcacctccgc
+    15721 cttggtgccg acgtcgatgc cgcgggtggg ctcgtccacg atcagcacct tggggccggt
+    15781 ggccagccac ttggcgagga cgaccttctg ctggttgccg ccggacaggg tggcgacggt
+    15841 gtcggcgatg cgggcgtact tgacctggag cttgaccgcc cagtccaggg aacggctgcg
+    15901 ctcggcgccg cggtccacga ggccggcctt cacggtcgtc cgcaggccgg tgagcccgat
+    15961 gttgcgttcg atggacatgt ccatcaccag cccctgggcg cggcggtcct ccgggacgag
+    16021 ggcgagaccg gcggccatcg cggtggaggg cgcgccgttg acgagcggct tcccgtccac
+    16081 ctccacttcg cccgcgtccc agcggtcgac gccgaagacg gcgcgggcga cctcggtgcg
+    16141 cccggcgccg accagtccgg ccagcgcgac gatctcaccg cgccgcacct cgaaggagac
+    16201 gtcggtgaag acgccctcgc gggtcagcct gcgcacgctg agggccctct cgccgggggt
+    16261 gacctcctgc ttggggtaca gctcgtcgag gtcgcggccg accatgcggc gcaccaggtc
+    16321 gtcctcggtc atgccctcca ggggctcgct ggcgatccag gcgccgtcgc gcagggtggt
+    16381 cacccgcgcg cagatgtgga agatctcctc caggcggtgg gagatgaaca gcaccgcggc
+    16441 gccctggtcg cgcagggtgc gcaccacgcc gaagagccgg gccacctcgc tgccggtgag
+    16501 ggcggcggtc ggctcgtcca tgatcaggac gcgggcgtcg aaggagaggg ccttggcgat
+    16561 ctccacgatc tgctggtccg cgatggacag accgcgcgcg ggccggtcgg ggtcgagttc
+    16621 gacgccgagg cgcagcatga gtgcggcggt ggcgtcgtgg gtcgccttgt ggtcgatgcg
+    16681 gccgagggcg cggcgcggct ggcggcccat gaagatgttc tcggcgatcg acaggtcggg
+    16741 gaagagggtg ggctcctggt agatcacggc gatgccggcg tcgcgggcgt cgccgggacc
+    16801 gtggaacacg accggtgcgc cgtcgagcag cacgtggccg gcgtccggcc ggtgcactcc
+    16861 ggccagcgtc ttgatgaggg tcgactttcc ggcgccgttc tcaccggcga gggcgtgcac
+    16921 ctcgccgggg aacagctcca gggagacgtc ccgcagcgca cggaccgcgc cgaaggactt
+    16981 ggagacgtcc ctgagcgcca gaaccggggc cgaacccgtg tcggacgggt gggtcattgg
+    17041 gggctcctcg acgacgccgg cgggactgcc ctcacggcgt cgtgaaaggt ttcaactcgg
+    17101 ttgccgggga cgttaggcag cgagggtatg tcacgtcaat ggttccgaga ccaaaaactt
+    17161 tcgatagtcg aaggtcacga ccgagtcacg aacagttgga gtgaccggaa ggcttgacac
+    17221 cccttcgggt ggctcataac ttcgcgttct gaatcgtttc acacatggtc gtactcacag
+    17281 caggccacga cccgatgcca caggagcgcc gaagtgaccg agctcgccgc ggtgaaagcc
+    17341 gcgctcaaga cccaggccgt cgagacgccg tcgtgggcgt acggcaactc gggcacccgc
+    17401 ttcaaggtgt tcgcccagcc cggtgtcccg cgcgacccct tcgagaaact ggacgacgcg
+    17461 gcgaaggtgc acgagttcac cggcgcggcc ccgaccgtcg ccctgcacat cccgtgggac
+    17521 cgggtcgagg actacgccgc gctggcggcg cacgccgaga agcggggcgt gcggatcggc
+    17581 gcgatcaact ccaacacctt ccaggacgac gactacaggc tgggcagcat ctgccacccc
+    17641 gacgcggcgg tgcgccggaa ggccgtcgac cacctgctgg agtgcgtcga catcatggac
+    17701 gccaccggct cgcgcgacct gaagctgtgg ttcgccgacg gcacgaacta cccgggacag
+    17761 gacgacatcc ggtcccggca ggaccggctg gccgagggcc tggccgaggt gtacgagcgg
+    17821 ctcggcgagg ggcagcggat gctcctggag tacaagctct tcgagccggc gttctacacg
+    17881 acggacgtgc cggactgggg cacggcgtac gcgcactgtc tcaagctggg cgagaaggcc
+    17941 caggtcgtgg tcgacacggg acaccacgcg ccgggcacga acatcgagtt catcgtggcg
+    18001 acgctgctgc gggaggggaa gctcggcggg ttcgacttca actcgcggtt ctacgccgac
+    18061 gacgacctga tggtgggtgc cgccgacccg ttccagctgt tccggatcat gtacgaggtg
+    18121 gtgcgcgggg gcgggttcac ctccgacgtg gcgttcatgc tcgaccagtg ccacaacatc
+    18181 gaggcgaaga tcccggcgat catccggtcg gtgatgaacg tgcaggaggc gacggcgaag
+    18241 gcgctgctgg tcgacggcac cgccctggcc gaggcgcagg ccgcggggga tgtgctggag
+    18301 gcgaacgcgg tgctgatgga cgcgtacaac acggacgtgc ggccgctgct ccgggaagtg
+    18361 cgggaggagt cggggctgga ccccgaaccc atgaaggcgt accgctcctg cgggtgggcg
+    18421 gagaaggtcg ttgccgagcg gatcggtggg cagcaggccg ggtggggggc gtaggcgtcc
+    18481 gccgggtttc tgtcttctcg cgggctgcgg gccgtatgtg gctggtcgcg cagttccccg
+    18541 cgccccttcc aggggcgctg ctcctcgccc tcgttgaaaa ggactgccaa acatgggtat
+    18601 ccatccctca gccgccgccc tcctcgcccg ctcccatcgg ctcggtgccg atcctcgcaa
+    18661 caccaactac gccggcggca acgcgtccgc caagggcacc gggaccgatc ccgtcaccgg
+    18721 gggtgaggtg gagctgatgt gggtcaaggg gtccggcggg gacctcggga cgctcaccgg
+    18781 ggccgggctc gccgtgctgc ggctggaccg gatgcgggcg ctcaaggacg tctacccggg
+    18841 cgtcgagcac gaggacgaga tggtcgccgc cttcgactac tgcctgcacg gcaagggcgg
+    18901 cgccgcgccc tcgatcgaca cggcgatgca cgggctcgtc gaggccgcac acgtcgacca
+    18961 cctccacccc gactccggca tcgcgctggc ctgcgcggcg gacggggaga agctgaccgc
+    19021 cgagtgcttc ggcgacaccg tggtgtgggt gccgtggcgg cggcccggtt tccagctcgg
+    19081 gctggacatc gccgccgtca aggaggccaa cccgcaggcc gtcggctgtg tgctcggcgg
+    19141 gcacggcatc accgcgtggg gcgacacctc cgaggagtgc gagcgcaact cgctgcacat
+    19201 catccgcacc gccgaggcgt tcctggccga acgcgggaag gccgagccgt tcggtccggt
+    19261 catcccggcg tacgcggcgc tgcccgaggc cgagcggcgg gagcgggcgg cggcgctggc
+    19321 gccgtacgtc cgtggtctgg cgtcccggga ccgggcgcag gtgggacact tcaccgacgc
+    19381 ggacgtggtg ctggacttcc tcgcgcgcgc cgagcatccg cgactcgccg cgctcggcac
+    19441 ctcctgcccg gaccacttcc tgcgcacgaa ggtgcggccg ctggtcctgg acgtggcgcc
+    19501 gaccgcgccg ctggaggagg cggtggcccg gctcaaggag ctgcacgcgg cctaccgcga
+    19561 ggagtacgcc gcctactacg agcggcacgc cgagcccgac tcccccgcca tgcgcggcgc
+    19621 cgacccggcg atcgtgctgg tgccgggtgt cggcatgttc agcttcggca aggacaagca
+    19681 gaccgcccgg gtggccggcg agttctacgt caacgcgatc aacgtgatgc gcggggccga
+    19741 ggcggtgtcg acgtacgcgc cgatcgagga gtcggagaag ttccgcatcg agtactgggc
+    19801 gctggaggag gccaagctcc ggcggatgcc gaggccgaag ccgctggcca cccgtgtcgc
+    19861 cctggtcacc ggcgcgggca gcgggatcgg gaaggcgatc gcgcggcggc tggtggacga
+    19921 gggcgcctgt gtggtcgtgg ccgacctgaa cgccgagaac gcggcggcgg tcgccgagga
+    19981 gctgggcggg gacgacaagg
+//
