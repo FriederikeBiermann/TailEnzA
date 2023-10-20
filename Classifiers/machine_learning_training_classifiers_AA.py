@@ -47,10 +47,10 @@ maxd=15
 directory_feature_matrices="Classifiers/AA_antismash_dataset_matrices/gomin2_gemin1/"
 foldername_output="Classifiers/AA_antismash_dataset_matrices/gomin2_gemin1/"
 enzymes=["Methyl","SAM","p450","ycao"]
-BGC_types=["ripp","nrp","pk"]
+
 # go through all enzymes, split between test/training set and train classifiers on them
 for enzyme in enzymes:
     path_feature_matrix=directory_feature_matrices+enzyme+"_complete_feature_matrix.csv"
-    x_train, x_test, y_train, y_test, x_data, y_data= create_training_test_set(path_feature_matrix, test_size)
+    x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(path_feature_matrix, test_size)
     for classifier,name_classifier in zip ( classifiers, names_classifiers):
         train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_data,y_data,x_train,y_train,x_test,y_test, foldername_output)
