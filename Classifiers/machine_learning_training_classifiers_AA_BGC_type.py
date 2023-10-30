@@ -42,9 +42,10 @@ test_size=0.5
 maxd=15
 # fill in names of files here!
 # generate feature matrix with feature_generation.py first
-directory_feature_matrices="Classifiers/AA_antismash_dataset_matrices/gomin2_gemin1/"
-foldername_output="Classifiers/AA_antismash_dataset_matrices/gomin2_gemin1/"
+directory_feature_matrices="/projects/p450/Output_training_dataset_neu_25/data_preprocession_BGC_type/output/"
+foldername_output="/projects/p450/Output_training_dataset_neu_25/data_preprocession_BGC_type/output/"
 enzymes=["Methyltransf_2", "Methyltransf_3", "Methyltransf_25", "P450", "radical_SAM", "ycao"]
+BGC_types=["PKS", "Terpene", "Alkaloide", "NRPSs", "RiPPs"]
 
 
 
@@ -55,6 +56,8 @@ for enzyme in enzymes:
     path_feature_matrix=directory_feature_matrices+enzyme+"_complete_feature_matrix.csv"
     x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(path_feature_matrix, test_size)
     for classifier,name_classifier in zip ( classifiers, names_classifiers):
-         all_cross_validation_scores[name_classifier + "_" + enzyme],all_balanced_accuracies[name_classifier + "_" + enzyme] = train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_data,y_data,x_train,y_train,x_test,y_test, foldername_output)
-    plot_cross_val_scores_with_variance(all_cross_validation_scores, foldername_output)
-    plot_balanced_accuracies(foldername_output, all_cross_validation_scores)
+         all_cross_validation_scores[name_classifier + "_" + enzyme],all_balanced_accuracies[name_classifier + "_" + enzyme] = train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_data,y_data,x_train,y_train,x_test,y_test, foldername_output, BGC_types)
+    plot_cross_val_scores_with_variance(all_cross_validation_scores, foldername_output, enzyme)
+    plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
+
+

@@ -54,7 +54,7 @@ def easysequence (sequence):
 def indexing_reference(record):
     # index the reference sequence without ignoring gaps
     list_reference=list(str(record.seq))
-
+    print(record.id, record.seq)
     index_aa=0
     index_mapping=[]
     for index,AA in enumerate(list_reference):
@@ -66,10 +66,11 @@ def indexing_reference(record):
 def convert_splitting_list(splitting_list,index_reference):
     #-> convert the canonic splitting list to also reflect eventual gaps in the reference sequence
     converted_splitting_list=[]
+  
     for fragment in splitting_list:
-        converted_splitting_list.append([fragment[0],index_reference[fragment[1]][1],index_reference[fragment[2]-1][1]])
+        print(fragment, converted_splitting_list, index_reference)
+        converted_splitting_list.append([fragment[0],index_reference[fragment[1]-1][1],index_reference[fragment[2]-1][1]])
     return converted_splitting_list
-#             subsequence=str(record.seq)[start-1:end].replace('-', '')
 
 def split_alignment(alignment, fragment, fastas_aligned_before):
     # split the aligned sequences at the positions determined by the splitting list
@@ -80,12 +81,10 @@ def split_alignment(alignment, fragment, fastas_aligned_before):
     seqRecord_list_per_fragment = []
     if fragment[0] == "begin":
         start = 1
-<<<<<<< HEAD
-<<<<<<< HEAD
     if fragment[0] != "end":
         for record in alignment:
             if record.id != "Reference":
-                subsequence = str(record.seq)[start-1:end].replace('-', '')
+                subsequence = str(record.seq)[start-1:end-1].replace('-', '')
 
                 seqRecord_list_per_fragment.append(
                     [record.id, subsequence])
