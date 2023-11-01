@@ -17,6 +17,7 @@ def merge_two_dicts(x, y):
     z = x.copy()   # start with x's keys and values
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
+
 def calculate_charge(sequence):
     # uses aa sequence as input and calculates the approximate charge of it
     AACharge = {"C":-.045,"D":-.999,  "E":-.998,"H":.091,"K":1,"R":1,"Y":-.001}
@@ -27,6 +28,7 @@ def calculate_charge(sequence):
         if aa in AACharge:
             charge += AACharge[aa]
     return charge
+
 def easysequence (sequence):
     #creates a string out of the sequence file, that only states if AA is acidic (a), basic (b), polar (p), neutral/unpolar (n),aromatic (r),Cystein (s) or a Prolin (t)
     seqstr=str(sequence)
@@ -63,92 +65,127 @@ def indexing_reference(record):
             index_mapping.append([index_aa,index])
 
     return (index_mapping)
+
 def convert_splitting_list(splitting_list,index_reference):
     #-> convert the canonic splitting list to also reflect eventual gaps in the reference sequence
     converted_splitting_list=[]
-    for fragment in splitting_list:
-        converted_splitting_list.append([fragment[0],index_reference[fragment[1]][1],index_reference[fragment[2]-1][1]])
+    for fragment,[begin, end] in splitting_list.items():
+        converted_splitting_list.append([fragment,index_reference[begin-1][1],index_reference[end-1][1]])
     return converted_splitting_list
 
 def split_alignment(alignment, fragment, fastas_aligned_before):
-    # split the aligned sequences at the positions determined by the splitting list
+    """
+    Splits the aligned sequences at the positions determined by the splitting list.
+
+    Parameters:
+    - alignment: A list of SeqRecord objects or a single SeqRecord object.
+    - fragment: A list with format [position_name, start, end] detailing where to split.
+    - fastas_aligned_before: A boolean indicating if multiple sequences are provided.
+
+    Returns:
+    - A dictionary with record IDs as keys and the corresponding subsequences as values.
+    """
+    
     start = fragment[1]
     end = fragment[2]
-    if fastas_aligned_before == False:
+    if not fastas_aligned_before:
         alignment = [alignment]
-    seqRecord_list_per_fragment = []
+    
+    seqRecord_dict_per_fragment = {}
+    
     if fragment[0] == "begin":
         start = 1
+        
     if fragment[0] != "end":
         for record in alignment:
             if record.id != "Reference":
-                subsequence = str(record.seq)[start-1:end].replace('-', '')
-
-                seqRecord_list_per_fragment.append(
-                    [record.id, subsequence])
+                subsequence = str(record.seq)[start-1:end-1].replace('-', '')
+                seqRecord_dict_per_fragment[record.id] = subsequence
     else:
         for record in alignment:
             if record.id != "Reference":
                 subsequence = str(record.seq)[start-1:].replace('-', '')
-                seqRecord_list_per_fragment.append(
-                                                        [record.id, subsequence])
-    seqRecord_array_per_fragment = np.array(seqRecord_list_per_fragment)
+                seqRecord_dict_per_fragment[record.id] = subsequence
 
-    return seqRecord_array_per_fragment
+    return seqRecord_dict_per_fragment
 
-def fragment_alignment(alignment,splitting_list, fastas_aligned_before):
-    # create a matrix from the splitted alignment
-    fragment_matrix=pd.DataFrame()
-    if fastas_aligned_before==False:
+def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
+    """
+    Creates a DataFrame matrix from the splitted alignment.
 
-        seqa=alignment[0]
-        seqb=alignment[1]
-        index_reference=indexing_reference(SeqRecord(Seq(seqa),id=seqa))
+    Parameters:
+    - alignment: A list of SeqRecord objects.
+    - splitting_list: A list that determines where sequences should be split.
+    - fastas_aligned_before: A boolean indicating if multiple sequences are provided.
 
-        converted_splitting_list=convert_splitting_list(splitting_list,index_reference)
+    Returns:
+    - A DataFrame with record IDs as index and fragments as columns.
+    """
+
+    fragment_matrix = pd.DataFrame()
+    
+    if not fastas_aligned_before:
+        seqa = alignment[0]
+        seqb = alignment[1]
+        index_reference = indexing_reference(SeqRecord(Seq(seqa), id=seqa))
+        converted_splitting_list = convert_splitting_list(splitting_list, index_reference)
+        
         for fragment in converted_splitting_list:
-                name_fragment=fragment[0]
-                seqRecord_list_per_fragment=split_alignment(SeqRecord(Seq(seqb),id=seqb),fragment,fastas_aligned_before)
-
-                fragment_matrix[name_fragment]=seqRecord_list_per_fragment[:,1]
-                fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:,0]))
+            name_fragment = fragment[0]
+            seqRecord_dict_per_fragment = split_alignment(SeqRecord(Seq(seqb), id=seqb), fragment, fastas_aligned_before)
+            fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment)
     else:
         for record in alignment:
-            if record.id=="Reference":
-                index_reference=indexing_reference(record)
-                converted_splitting_list=convert_splitting_list(splitting_list,index_reference)
+            if record.id == "Reference":
+                index_reference = indexing_reference(record)
+                converted_splitting_list = convert_splitting_list(splitting_list, index_reference)
+                
                 for fragment in converted_splitting_list:
-                    name_fragment=fragment[0]
-                    seqRecord_list_per_fragment=split_alignment(alignment,fragment,fastas_aligned_before)
-                    fragment_matrix[name_fragment]=seqRecord_list_per_fragment[:,1]
-                fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:,0]))
+                    name_fragment = fragment[0]
+                    seqRecord_dict_per_fragment = split_alignment(alignment, fragment, fastas_aligned_before)
+                    fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment)
                 break
 
     return fragment_matrix
 
 def featurize(fragment_matrix, permutations, fragments, include_charge_features):
-    #create feature_matrix from fragment_matrix, count motifs in each fragemnt
-    feature_matrix=pd.DataFrame()
-    new_rows =[]
+    """
+    Creates a feature matrix from the fragment matrix by counting motifs in each fragment.
+
+    Parameters:
+    - fragment_matrix: DataFrame of sequences with fragments as columns.
+    - permutations: List of motifs to count in each fragment.
+    - fragments: List of fragment names.
+    - include_charge_features: A boolean to determine whether to include charge features.
+
+    Returns:
+    - A DataFrame representing the feature matrix.
+    """
+    if fragment_matrix.empty:
+        return pd.DataFrame()
+    feature_matrix = pd.DataFrame()
+    new_rows = []
+    
     for index, row in fragment_matrix.iterrows():
-        new_row={}
+        new_row = {}
         for fragment in fragments:
-            sequence_fragment=row[fragment]
-
-            easysequence_fragment=easysequence(sequence_fragment)
+            sequence_fragment = row[fragment]
+            easysequence_fragment = easysequence(sequence_fragment)
+            
             for motif in permutations:
-                name_column=motif+fragment
+                name_column = motif + fragment
                 new_row[name_column] = easysequence_fragment.count(motif)
+            if include_charge_features:
+                new_row = append_charge_features(new_row, fragment, easysequence_fragment, sequence_fragment)
+        new_rows.append(new_row)
 
-            if include_charge_features==True:
-                new_row=append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment)
+    new_rows_df = pd.DataFrame(new_rows) # Assuming new_rows has the same columns as feature_matrix
+    feature_matrix = pd.concat([feature_matrix, new_rows_df], ignore_index=True)
 
-        new_rows += [new_row]
-    feature_matrix=feature_matrix.append(new_rows, ignore_index=True)
-    if include_charge_features==True:
-        feature_matrix=sum_charge_features(feature_matrix,fragments) 
+    if include_charge_features:
+        feature_matrix = sum_charge_features(feature_matrix, fragments)
+
     return feature_matrix
-
 
 def append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment):
     #append features indicating the charge to the feature matrix
