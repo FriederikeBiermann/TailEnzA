@@ -16,13 +16,15 @@ input_file=$1  # Input file passed as an argument to the shell script
 reference_file=$2  # Reference file passed as a second argument to the shell script
 gap_open=$3  # Gap open penalty
 gap_extend=$4  # Gap extension penalty
+center=$5
 
 num_sequences=$(grep -c "^>" $input_file)
 num_alignments=$((($num_sequences + 99) / 100))
 num_jobs=$((($num_alignments + 9) / 10))
 
 if [ $num_jobs -gt 1 ]; then
-    modified_script="#!/bin/bash
+    sbatch <<EOF
+#!/bin/bash
 #SBATCH --job-name=20_cores_Muscle3_alignment_TerP450_%A_%a_
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
@@ -36,24 +38,17 @@ if [ $num_jobs -gt 1 ]; then
 source ~/.bashrc
 conda activate /beegfs/home/fbiermann/miniconda3_supernew/envs/muscle_38
 
-input_file=$1  # Input file passed as an argument to the shell script
-reference_file=$2  # Reference file passed as a second argument to the shell script
-gap_open=$3  # Gap open penalty
-gap_extend=$4  # Gap extension penalty
-
 for i in \$(seq 0 9); do
     alignment_id=\$((\$SLURM_ARRAY_TASK_ID * 10 + \$i))
     start=\$((\$alignment_id * 100))
     end=\$((\$start + 100))
 
-    if [ \$start -lt \$num_sequences ]; then
-        output_file=\"\${input_file%.*}_aligned_\$alignment_id.fasta\"
-
-        python3 run_muscle_3_with_parameters.py \$input_file \$output_file \$reference_file \$start \$end \$gap_open \$gap_extend
+    if [ \$start -lt $num_sequences ]; then
+        output_file="${input_file%.*}_aligned_\$alignment_id.fasta"
+        python3 run_muscle_3_with_parameters.py $input_file \$output_file $reference_file \$start \$end $gap_open $gap_extend $center
     fi
-done"
-
-    echo "$modified_script" | sbatch --job-name=20_cores_Muscle3_alignment_TerP450_modified -
+done
+EOF
     exit 0
 fi
 
@@ -65,7 +60,6 @@ for i in $(seq 0 9); do
     
     if [ $start -lt $num_sequences ]; then
         output_file="${input_file%.*}_aligned_$alignment_id.fasta"
-        
         python3 run_muscle_3_with_parameters.py $input_file $output_file $reference_file $start $end $gap_open $gap_extend
     fi
 done

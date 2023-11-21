@@ -11,24 +11,27 @@ from feature_generation import *
 # if fastas aligned before True-> use alignment made for instance in geneious utilizing MUSCLE align -> best for larger datasets
 fastas_aligned_before=True
 # if include_charge_features=True-> features describing general electrostatic information will be included
-include_charge_features=False
+include_charge_features=True
 #fill in filenames here!
-foldernameoutput="/beegfs/projects/p450/Output_training_dataset_neu_25/data_preprocession_matabolism_type/output/"
-foldername_training_sets="/beegfs/projects/p450/Output_training_dataset_neu_25/data_preprocession_BGC_type/input_align_align/"
+foldernameoutput="/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/preprocessing_metabolism/"
+foldername_training_sets="/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/realigned_fastas/"
 filename_permutations="permutations.txt"
 
-#enzymes=["p450","ycao","SAM","Methyl"]
-enzymes=["Methyltransf_2", "Methyltransf_3", "Methyltransf_25", "P450", "radical_SAM", "ycao"]
-#enzymes=["ycao"]
-BGC_types=["PKS", "Terpene", "Alkaloide", "NRPSs", "RiPPs"]
-#BGC_types=["ripp"]
+
+enzymes=["Methyltransf_2", "Methyltransf_3", "Methyltransf_25", "P450", "radical_SAM", "ycao", "TP_methylase"]
+enzymes=["Methyltransf_25","radical_SAM"]
+
+BGC_types=[ "PKS", "Terpene", "Alkaloide", "NRPSs", "RiPPs"]
+
 # the model proteins are the proteins all proteins are aligned against (beforehand) . They must be within the training data named "reference"
 model_proteins_for_alignment={"P450":"PPPSLEDAAPSVLRLSPLLRELQMRAPVTKIRTPAGDEGWLVTRHAELKQLLHDERLARAHADPANAPRYVKSPLMDLLIMDDVEAARAAHAELRTLLTPQFSARRVLNMMPMVEGIAEQILNGFAAQEQPADLRGNFSLPYSLTVLCALIGIPLQEQGQLLAVLGEMATLNDAESVARSQAKLFGLLTDLAGRKRAEPGDDVISRLCETVPEDERIGPIAASLLFAGLDSVATHVDLGVVLFTQYPDQLKEALADEKLMRSGVEEILRAAKAGGSGAALPRYATDDIEIADVTIRTGDLVLLDFTLVNFDEAVFDDADLFDIRRSPNEHLTFGHGMWHCIGAPLARMMLKTAYTQLFTRLPGLKLASSVEELQVTSGQLNGGLTELPVTW",
                               "ycao": "MDIKYKLASYRICSPEETFEKIQEALKKIETVEIKNIQHLDKVNIPVYYLKRRVVVDGKEGIAIHYGKGANDIQAKVSACMEAIERFSASYDKNKVKEKPDNPINVEDLILPQYADKNVKEWVEGIDIINNETIDVPADAVFYPTSGKLFRGNTNGLASGNNLDEAILHATLEIIERDAWSLADLARKIPTKINPEDAKNPLIHELIEKYEKAGVKIILKDLTSEFEIPVVAAISDDLSKNPLMLCVGVGCHLHPEIAILRALTEVAQSRASQLHGFRRDAKLREEFTSKIPYERLKRIHRKWFEFEGEINIADMPNNARYDLKKDLKFIKDKLSEFGFDKLIYVDLNKVGVDAVRVIIPKMEVYTIDRDRLSRRAFERVKKLYY",
                               "radical_SAM": "MGSSHHHHHHSSGLVPRGSHMRTISEDILFRLEKFGGILINKTNFERIELDETEAFFLYLVQNHGIEIATSFFKKEIEMGKLERALSLNIYSDNNIEDSLNNPYETLQNARKHVAKLKKHNILSFPLELVIYPSMYCDLKCGFCFLANREDRNAKPAKDWERILRQAKDNGVLSVSILGGEPTRYFDIDNLLIACEELKIKTTITTNAQLIKKSTVEILAKSKYITPVLSLQTLDSKLNFELMGVRPDRQIKLAKYFNEVGKKCRINAVYTKQSYEQIIELVDFCIENKIDRFSVANYSEVTGYTKIKKKYDLADLRRLNEYVTDYITQREANLNFATEGCHLFTAYPELINNSIEFSEFDEMYYGCRAKYTKMEIMSNGDILPCIAFLGVNQTKQNAFEKDLLDVWYDDPLYGGIRSFRTKNSKCLSCGLLKICEGGCYVNLIKEKSPEYFRDSVCQL",
                               "Methyltransf_2":"MGSSHHHHHHSSGLVPRGSHMTVEQTPENPGTAARAAAEETVNDILQGAWKARAIHVAVELGVPELLQEGPRTATALAEATGAHEQTLRRLLRLLATVGVFDDLGHDDLFAQNALSAVLLPDPASPVATDARFQAAPWHWRAWEQLTHSVRTGEASFDVANGTSFWQLTHEDPKARELFNRAMGSVSLTEAGQVAAAYDFSGAATAVDIGGGRGSLMAAVLDAFPGLRGTLLERPPVAEEARELLTGRGLADRCEILPGDFFETIPDGADVYLIKHVLHDWDDDDVVRILRRIATAMKPDSRLLVIDNLIDERPAASTLFVDLLLLVLVGGAERSESEFAALLEKSGLRVERSLPCGAGPVRIVEIRRA",
                               "Methyltransf_3": "MSESQQLWDDVDDYFTTLLAPEDEALTAALRDSDAAGLPHINVAPNQGKLLQLLAEIQGARRILEIGTLGGYSTIWLGRALPRDGRLISFEYDAKHAEVARRNLARAGLDGISEVRVGPALESLPKLADERPEPFDLVFIDADKVNNPHYVEWALKLTRPGSLIVVDNVVRGGGVTDAGSTDPSVRGTRSALELIAEHPKLSGTAVQTVGSKGYDGFALARVLPLEHHHHHH" ,
-                              "Methyltransf_25":"MAHSSATAGPQADYSGEIAELYDLVHQGKGKDYHREAADLAALVRRHSPKAASLLDVACGTGMHLRHLADSFGTVEGLELSADMLAIARRRNPDAVLHHGDMRDFSLGRRFSAVTCMFSSIGHLAGQAELDAALERFAAHVLPDGVVVVEPWWFPENFTPGYVAAGTVEAGGTTVTRVSHSSREGEATRIEVHYLVAGPDRGITHHEESHRITLFTREQYERAFTAAGLSVEFMPGGPSGRGLFTGLPGAKGETRLEHHHHHH" }
+                              "Methyltransf_25":"MAHSSATAGPQADYSGEIAELYDLVHQGKGKDYHREAADLAALVRRHSPKAASLLDVACGTGMHLRHLADSFGTVEGLELSADMLAIARRRNPDAVLHHGDMRDFSLGRRFSAVTCMFSSIGHLAGQAELDAALERFAAHVLPDGVVVVEPWWFPENFTPGYVAAGTVEAGGTTVTRVSHSSREGEATRIEVHYLVAGPDRGITHHEESHRITLFTREQYERAFTAAGLSVEFMPGGPSGRGLFTGLPGAKGETRLEHHHHHH", 
+                              "TP_methylase":"AMADIGSMNTTVIPPSLLDVDFPAGSVALVGAGPGDPGLLTLRAWALLQQAEVVVYDRLVARELIALLPESCQRIYVGKRCGHHSLPQEEINELLVRLARQQRRVVRLKGGDPFIFGRGAEELERLLEAGVDCQVVPGVTAASGCSTYAGIPLTHRDLAQSCTFVTGHLQNDGRLDLDWAGLARGKQTLVFYMGLGNLAEIAARLVEHGLASDTPAALVSQGTQAGQQVTRGALAELPALARRYQLKPPTLIVVGQVVALFAERAMAHPSYLGAGSPVSREAVACALEHHHHHH"}
+
 start=0
 end=350
 # the splitting list defines the functional fragments that the enzymes will be cut into
@@ -37,14 +40,16 @@ splitting_lists={"P450":[["begin",1,69],["sbr1",70,78],["str1",79,195],["sbr2",1
                  "radical_SAM": [["begin",start,106],["SAM",107,310],["bridging",311,346],["end",347,end]],
                  "Methyltransf_2":[["begin",1,132],["sbr1",133,186],["SAMb",187,275],["sbr2",276,314],["sbr3",315,361],["end",362,369]],
                  "Methyltransf_3":[["begin",1,36],["sbr1",37,43],["str1",44,139],["sbr2",140,144],["str2",145,166],["sbr3",167,171],["str3",172,208],["sbr4",209,215],["end",216,224]],
-                 "Methyltransf_25":[["begin",1,13],["sbr1",14,31],["SAMb",32,103],["str1",104,115],["sbr2",116,123],["str2",124,148],["sbr3",149,186],["str3",187,233],["sbr4",234,242],["end",243,250]]}
+                 "Methyltransf_25":[["begin",1,13],["sbr1",14,31],["SAMb",32,103],["str1",104,115],["sbr2",116,123],["str2",124,148],["sbr3",149,186],["str3",187,233],["sbr4",234,242],["end",243,250]],
+                 "TP_methylase":[["begin",1,24],["sbr1",25,30],["sbr2",31,49],["sbr3",50,55],["sbr4",56,101],["sbr5",102,112],["sbr6",113,127],["sbr7",128,167],["sbr8",168,184],["sbr9",185,189],["sbr10",190,237],["sbr11",238,242],["end",243,266]]}
 
 fragments={"P450":["begin","sbr1","str1","sbr2","cat","str2","sbr3","end"],
            "ycao":["begin","sbr1","f2","sbr2","f3","sbr3","f4","sbr4","f5","sbr5","end"],
            "radical_SAM":["begin","SAM","bridging","end"],
            "Methyltransf_2":["begin","sbr1","SAMb","sbr2","sbr3","end"],
            "Methyltransf_3":["begin","sbr1","str1","sbr2","str2","sbr3","str3","sbr4","end"],
-           "Methyltransf_25":["begin","sbr1","SAMb","str1","sbr2","str2","sbr3","str3","sbr4","end"]}
+           "Methyltransf_25":["begin","sbr1","SAMb","str1","sbr2","str2","sbr3","str3","sbr4","end"],
+           "TP_methylase":["begin", "sbr1", "sbr2", "sbr3", "sbr4", "sbr5","sbr6","sbr7","sbr8", "sbr9", "sbr10", "sbr11", "end"]}
 
 
 #permutations= list of 4-aa motifs to use as features
@@ -83,6 +88,7 @@ for enzyme in enzymes:
 
     for BGC_type, datasets in filenames_dict.items():
         for dataset in datasets:
+            print(dataset)
             # Fill in the feature matrix with data from files. The fragment matrix is a table with all sequences split into the different functional parts.
             if fastas_aligned_before:
                 alignment = AlignIO.read(open(dataset), "fasta")

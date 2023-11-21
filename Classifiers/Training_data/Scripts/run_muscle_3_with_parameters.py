@@ -4,7 +4,7 @@ import subprocess
 from Bio import SeqIO
 
 def run_muscle(input_file, output_file, gap_open=None, gap_extend=None, center=None):
-    muscle_cmd = ["muscle", "-in", input_file, "-out", output_file , "-seqtype", "protein"]
+    muscle_cmd = ["muscle", "-in", input_file, "-out", output_file , "-seqtype", "protein", "-maxiters", "16"]
     
     if gap_open:
         muscle_cmd.extend(["-gapopen", str(gap_open)])
@@ -14,11 +14,11 @@ def run_muscle(input_file, output_file, gap_open=None, gap_extend=None, center=N
         muscle_cmd.extend(["-center", str(center)])
 
     
-    try:
-        subprocess.check_call(muscle_cmd)
-    except subprocess.CalledProcessError:
-        print(f"Error: Failed to run command {' '.join(muscle_cmd)}")
-        sys.exit(1)
+   # try:
+    subprocess.check_call(muscle_cmd)
+    #except subprocess.CalledProcessError:
+     #   print(f"Error: Failed to run command {' '.join(muscle_cmd)}")
+     #   sys.exit(1)
 
 try:
     input_file = sys.argv[1]

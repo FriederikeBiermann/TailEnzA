@@ -42,9 +42,11 @@ test_size=0.5
 maxd=15
 # fill in names of files here!
 # generate feature matrix with feature_generation.py first
-directory_feature_matrices="/projects/p450/Output_training_dataset_neu_25/data_preprocession_matabolism_type/output/"
-foldername_output="/projects/p450/Output_training_dataset_neu_25/data_preprocession_matabolism_type/output/"
-enzymes=["Methyltransf_2", "Methyltransf_3", "Methyltransf_25", "P450", "radical_SAM", "ycao"]
+directory_feature_matrices="/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/preprocessing_metabolism/"
+foldername_output="/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/classifiers_metabolism/"
+enzymes=["TP_methylase","Methyltransf_2", "Methyltransf_3", "Methyltransf_25", "P450", "radical_SAM", "ycao"]
+enzymes=[ "Methyltransf_25", "P450", "radical_SAM", "ycao"]
+
 BGC_types=["secondary_metabolism" , "primary_metabolism"]
 
 

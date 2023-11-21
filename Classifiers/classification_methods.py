@@ -107,8 +107,8 @@ def train_classifier_and_get_accuracies(classifier,name_classifier, enzyme, x_da
     pickle.dump(classifier, open(filename_classifier, 'wb'))
     #Plot everything
     plot_confusion_matrix(y_test, test_predict_classifier, enzyme, name_classifier, BGC_types, foldernameoutput)
-    if hasattr(classifier, 'feature_importances_'):
-        plot_feature_importance(classifier.feature_importances_, x_data.columns, name_classifier, enzyme, foldernameoutput)
+    #if hasattr(classifier, 'feature_importances_'):
+       # plot_feature_importance(classifier.feature_importances_, x_data.columns, name_classifier, enzyme, foldernameoutput)
 
 
     return cross_validation_classifier, balanced_accuracy_classifier
