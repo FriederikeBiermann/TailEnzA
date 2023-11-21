@@ -32,8 +32,8 @@ parser = argparse.ArgumentParser(
     description="TailEnzA extracts Genbank files which contain potential novel RiPP biosynthesis gene clusters.")
 
 parser.add_argument("-i", "--input", type=str, nargs=1,
-                    metavar="directory_name", default=None,
-                    help="Opens and reads the specified folder which contains Genbank files of interest.", required=True)
+                    metavar="file_name", default=None,
+                    help="Opens and reads the specified genbank file.", required=True)
 
 parser.add_argument("-o", "--output", type=str, nargs=1,
                     metavar="directory_name", default="Output/",
@@ -46,6 +46,7 @@ parser.add_argument("-f", "--frame_length", type=int, nargs=1,
 parser.add_argument("-t", "--trailing_window", type=int, nargs=1,
                     metavar="boundary", default=5000,
                     help="determines trailing window size of the extracted gene window")                   
+
 parser.add_argument("-c", "--score_cutoff", type=float, nargs=1,
                     metavar="cutoff", default=-1,
                     help="Cutoff score to use for the genbank extraction.")                   
@@ -56,11 +57,11 @@ filename = args.input[0]
 frame_length = args.frame_length[0]
 trailing_window = args.trailing_window[0]
 score_threshold = args.score_cutoff[0]
-directory_of_classifiers_BGC_type = "/projects/p450/Output_training_dataset_TailEnzA_27_10_2023/data_preprocession_BGC_type/output/"
-directory_of_classifiers_NP_affiliation = "/projects/p450/Output_training_dataset_TailEnzA_27_10_2023/data_preprocession_matabolism_type/output/"
+directory_of_classifiers_BGC_type = "/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/classifiers_BGC/"
+directory_of_classifiers_NP_affiliation = "/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/classifiers_metabolism/"
 fastas_aligned_before = True
 permutation_file = "permutations.txt"
-include_charge_features=False
+include_charge_features=True
 
 try:
     os.mkdir(args.output[0])
@@ -77,7 +78,7 @@ with open(permutation_file, 'r') as file:
 def extract_feature_properties(feature):
     
     sequence = feature.qualifiers['translation'][0]
-    products = feature.qualifiers['product'][0]
+    products = feature.qualifiers.get('product', ["Unknown"])[0]
     cds_start = int(feature.location.start)
     if cds_start > 0 :
         cds_start = cds_start + 1
@@ -86,7 +87,7 @@ def extract_feature_properties(feature):
 
 def get_identifier(feature):
     """Returns the 'locus_tag' or 'protein_id' from a feature"""
-    return feature.qualifiers.get('locus_tag', [feature.qualifiers.get('protein_id', [None])[0]])[0]
+    return feature.qualifiers.get('protein_id', feature.qualifiers.get('locus_tag', ["Unknown"]))[0]
 
 def process_feature_dict(product_dict, enzyme_name):
     """Process the feature dictionary and returns a DataFrame"""
@@ -136,7 +137,7 @@ def create_feature_lookup(record):
     feature_lookup = {}
     for feature in record.features:
         if feature.type == "CDS":
-            protein_id = feature.qualifiers.get('protein_id', [feature.qualifiers.get('locus_tag', [None])[0]])[0]
+            protein_id = feature.qualifiers.get('protein_id', feature.qualifiers.get('locus_tag', ["Unknown"]))[0]
             feature_lookup[protein_id] = feature
     return feature_lookup
 
@@ -175,9 +176,10 @@ def run_hmmer(record, enzyme):
                 try:
                     pipeline = pyhmmer.plan7.Pipeline(hmm.alphabet)
                     for hit in pipeline.search_hmm(hmm, sequences):
+                            
                             evalue = hit.evalue
                             hit_name = hit.name.decode()
-                            if evalue >= 10e-20:
+                            if evalue >= 10e-10:
                                 continue
 
                             feature = feature_lookup.get(hit_name)
@@ -187,7 +189,6 @@ def run_hmmer(record, enzyme):
                     print(f"Error during HMMER search: {e}")
     except Exception as e:
         print(f"Error opening or processing files: {e}")
-
     return results
 
 
@@ -199,7 +200,7 @@ def genbank_to_fasta_cds(record, fasta_file):
             if feature.type == "CDS":
                 try:
                     # Get the protein ID or locus tag for the sequence ID in the FASTA file
-                    protein_id = feature.qualifiers.get('protein_id', feature.qualifiers.get('locus_tag', ["Unknown"])[0])[0]
+                    protein_id = feature.qualifiers.get('protein_id', feature.qualifiers.get('locus_tag', ["Unknown"]))[0]
                     # Try to get the translation from qualifiers
                     translation = feature.qualifiers.get('translation')[0]
                     if translation:
@@ -260,9 +261,9 @@ def process_dataframe_and_save(complete_dataframe, gb_record, trailing_window, o
             }  # Initialize protein information
             
             if row["BGC_type"] == target_BGC_type:
-                score += (row["BGC_type_score"] + 0.7) * (row["NP_BGC_affiliation_score"] - 0.5)
+                score += (row["BGC_type_score"] + 0.7) * (row["NP_BGC_affiliation_score"])
             else:
-                score -= (row["BGC_type_score"] + 0.7) * (0.5 - row["NP_BGC_affiliation_score"])
+                score -= (row["BGC_type_score"] + 0.7) * (row["NP_BGC_affiliation_score"])
             score = round(score, 3)
 
             protein_details.append(protein_info)  # Add protein information to the list
@@ -274,7 +275,6 @@ def process_dataframe_and_save(complete_dataframe, gb_record, trailing_window, o
         record.annotations["molecule_type"] = "dna"
         record.annotations["score"] = score
         filename_record = f"{gb_record.id}_{window_start}_{window_end}_{score}.gb"
-        print(score, output_path + str(score) + filename_record, record)
         if score >= score_threshold:
             SeqIO.write(record, output_path + str(score) + filename_record, "gb")
         
@@ -317,68 +317,66 @@ def safe_map(row, mapping_dict, column_name):
     return row
 
 complete_scores_list = []
-for filename in os.listdir(input):
-    if filename.endswith('.gbff') or filename.endswith('.gb'):
-        for gb_record in SeqIO.parse(filename, "genbank"):
-            # Create datastructure for results and fill with hmmer results
-            tailoring_enzymes_in_record = {key:run_hmmer(gb_record, key) for key in enzymes}
-            enzyme_dataframes = {enzyme_name: set_dataframe_columns(process_feature_dict(enzyme_dict, enzyme_name)) for enzyme_name, enzyme_dict in tailoring_enzymes_in_record.items()}
-            complete_dataframe = pd.concat([enzyme_dataframe for enzyme_dataframe in enzyme_dataframes.values()], axis=0)
-            # Save enzymes together with reference to fasta for running the alignment on it
-            save_enzymes_to_fasta(tailoring_enzymes_in_record)
-            fasta_dict = {key: os.path.join(tmp_dir, f"{key}_tailoring_enzymes.fasta") for key in enzymes}
-            alignments = {enzyme: muscle_align_sequences(filename, enzyme) for enzyme, filename in fasta_dict.items()}
-            fragment_matrixes = {key: fragment_alignment(alignments[key],enzymes[key]["splitting_list"],fastas_aligned_before) for key in enzymes} 
-            feature_matrixes = {key: featurize(fragment_matrix, permutations, enzymes[key]["splitting_list"].keys(), include_charge_features) for key, fragment_matrix in fragment_matrixes.items()}
+if filename.endswith('.gbff') or filename.endswith('.gb') or filename.endswith('.gbk'):
+    for gb_record in SeqIO.parse(filename, "genbank"):
+        # Create datastructure for results and fill with hmmer results
+        tailoring_enzymes_in_record = {key:run_hmmer(gb_record, key) for key in enzymes}
+        enzyme_dataframes = {enzyme_name: set_dataframe_columns(process_feature_dict(enzyme_dict, enzyme_name)) for enzyme_name, enzyme_dict in tailoring_enzymes_in_record.items()}
+        complete_dataframe = pd.concat([enzyme_dataframe for enzyme_dataframe in enzyme_dataframes.values()], axis=0)
+        # Save enzymes together with reference to fasta for running the alignment on it
+        save_enzymes_to_fasta(tailoring_enzymes_in_record)
+        fasta_dict = {key: os.path.join(tmp_dir, f"{key}_tailoring_enzymes.fasta") for key in enzymes}
+        alignments = {enzyme: muscle_align_sequences(filename, enzyme) for enzyme, filename in fasta_dict.items()}
+        fragment_matrixes = {key: fragment_alignment(alignments[key],enzymes[key]["splitting_list"],fastas_aligned_before) for key in enzymes} 
+        feature_matrixes = {key: featurize(fragment_matrix, permutations, enzymes[key]["splitting_list"].keys(), include_charge_features) for key, fragment_matrix in fragment_matrixes.items()}
 
-            classifiers_metabolism = {key: pickle.load(open(directory_of_classifiers_NP_affiliation+key+enzymes[key]["classifier_metabolism"], "rb")) for key in enzymes}
-            classifiers_BGC_type = {key: pickle.load(open(directory_of_classifiers_BGC_type+key+enzymes[key]["classifier_BGC_type"], "rb")) for key in enzymes}
-            predicted_metabolisms = {
-                key: classifiers_metabolism[key].predict(feature_matrix) 
-                if not feature_matrix.empty else [] 
-                for key, feature_matrix in feature_matrixes.items()
-            }
+        classifiers_metabolism = {key: pickle.load(open(directory_of_classifiers_NP_affiliation+key+enzymes[key]["classifier_metabolism"], "rb")) for key in enzymes}
+        classifiers_BGC_type = {key: pickle.load(open(directory_of_classifiers_BGC_type+key+enzymes[key]["classifier_BGC_type"], "rb")) for key in enzymes}
+        predicted_metabolisms = {
+            key: classifiers_metabolism[key].predict(feature_matrix) 
+            if not feature_matrix.empty else [] 
+            for key, feature_matrix in feature_matrixes.items()
+        }
 
-            predicted_BGC_types = {
-                key: classifiers_BGC_type[key].predict(feature_matrix) 
-                if not feature_matrix.empty else [] 
-                for key, feature_matrix in feature_matrixes.items()
-            }
+        predicted_BGC_types = {
+            key: classifiers_BGC_type[key].predict(feature_matrix) 
+            if not feature_matrix.empty else [] 
+            for key, feature_matrix in feature_matrixes.items()
+        }
 
-            scores_predicted_BGC_type = {
-                key: classifiers_BGC_type[key].predict_proba(feature_matrix) 
-                if not feature_matrix.empty else [] 
-                for key, feature_matrix in feature_matrixes.items()
-            }
-
-            scores_predicted_metabolism = {
-                key: classifiers_metabolism[key].predict_proba(feature_matrix) 
-                if not feature_matrix.empty else [] 
-                for key, feature_matrix in feature_matrixes.items()
-            }
+        scores_predicted_BGC_type = {
+            key: classifiers_BGC_type[key].predict_proba(feature_matrix) 
+            if not feature_matrix.empty else [] 
+            for key, feature_matrix in feature_matrixes.items()
+        }
+        scores_predicted_metabolism = {
+            key: classifiers_metabolism[key].predict_proba(feature_matrix) 
+            if not feature_matrix.empty else [] 
+            for key, feature_matrix in feature_matrixes.items()
+        }
 
 
-            for enzyme in enzymes:
+        for enzyme in enzymes:
 
-                # Create a dictionary mapping for each predicted value
-                predicted_metabolism_dict = dict(zip(enzyme_dataframes[enzyme].index, predicted_metabolisms[enzyme]))
-                score_predicted_metabolism_dict = dict(zip(enzyme_dataframes[enzyme].index, [scores[1] for prediction, scores in zip(predicted_metabolisms[enzyme], scores_predicted_metabolism[enzyme])]))
+            # Create a dictionary mapping for each predicted value
+            predicted_metabolism_dict = dict(zip(enzyme_dataframes[enzyme].index, predicted_metabolisms[enzyme]))
+            score_predicted_metabolism_dict = dict(zip(enzyme_dataframes[enzyme].index, [scores[1] for prediction, scores in zip(predicted_metabolisms[enzyme], scores_predicted_metabolism[enzyme])]))
 
-                predicted_BGC_type_dict = dict(zip(enzyme_dataframes[enzyme].index, predicted_BGC_types[enzyme]))
-                score_predicted_BGC_type_dict = dict(zip(enzyme_dataframes[enzyme].index, [max(scores) for prediction, scores in zip(predicted_BGC_types[enzyme], scores_predicted_BGC_type[enzyme])]))
-                # Map the predictions and scores to the dataframe using the dictionaries
-                
-                # Apply the function for NP_BGC_affiliation and its score
-                complete_dataframe = complete_dataframe.apply(safe_map, args=(predicted_metabolism_dict, "NP_BGC_affiliation"), axis=1)
-                complete_dataframe = complete_dataframe.apply(safe_map, args=(score_predicted_metabolism_dict, "NP_BGC_affiliation_score"), axis=1)
+            predicted_BGC_type_dict = dict(zip(enzyme_dataframes[enzyme].index, predicted_BGC_types[enzyme]))
+            score_predicted_BGC_type_dict = dict(zip(enzyme_dataframes[enzyme].index, [max(scores) for prediction, scores in zip(predicted_BGC_types[enzyme], scores_predicted_BGC_type[enzyme])]))
+            # Map the predictions and scores to the dataframe using the dictionaries
+            
+            # Apply the function for NP_BGC_affiliation and its score
+            complete_dataframe = complete_dataframe.apply(safe_map, args=(predicted_metabolism_dict, "NP_BGC_affiliation"), axis=1)
+            complete_dataframe = complete_dataframe.apply(safe_map, args=(score_predicted_metabolism_dict, "NP_BGC_affiliation_score"), axis=1)
 
-                # Apply the function for BGC_type and its score
-                complete_dataframe = complete_dataframe.apply(safe_map, args=(predicted_BGC_type_dict, "BGC_type"), axis=1)
-                complete_dataframe = complete_dataframe.apply(safe_map, args=(score_predicted_BGC_type_dict, "BGC_type_score"), axis=1)
-            complete_dataframe.to_csv(os.path.join(args.output[0], f"complete_dataframe_{gb_record.id}.csv"))
-            results_dict, scores_list = process_dataframe_and_save(complete_dataframe, gb_record, trailing_window, args.output[0], score_threshold = score_threshold)
-            complete_scores_list.extend(scores_list)
-            result_df = pd.DataFrame(results_dict)
-            result_df.to_csv(os.path.join(args.output[0], f"result_dataframe_{gb_record.id}.csv"))
-        clear_tmp_dir(tmp_dir)
-    plot_histogram(complete_scores_list)
+            # Apply the function for BGC_type and its score
+            complete_dataframe = complete_dataframe.apply(safe_map, args=(predicted_BGC_type_dict, "BGC_type"), axis=1)
+            complete_dataframe = complete_dataframe.apply(safe_map, args=(score_predicted_BGC_type_dict, "BGC_type_score"), axis=1)
+        complete_dataframe.to_csv(os.path.join(args.output[0], f"complete_dataframe_{gb_record.id}.csv"))
+        results_dict, scores_list = process_dataframe_and_save(complete_dataframe, gb_record, trailing_window, args.output[0], score_threshold = score_threshold)
+        complete_scores_list.extend(scores_list)
+        result_df = pd.DataFrame(results_dict)
+        result_df.to_csv(os.path.join(args.output[0], f"result_dataframe_{gb_record.id}.csv"))
+    clear_tmp_dir(tmp_dir)
+#plot_histogram(complete_scores_list)

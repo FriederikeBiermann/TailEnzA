@@ -14,10 +14,10 @@ source ~/.bashrc
 conda activate /beegfs/home/fbiermann/miniconda3_supernew/envs/Noemi
 
 # Your Python script path
-PYTHON_SCRIPT="prediction_module_new.py"
+PYTHON_SCRIPT="prediction_module_server_version.py"
 
 # Input directory containing subdirectories with files
-INPUT_DIR="/projects/p450/NCBI_xanthomonas_norcardiaceae_myxococcales_actinomycetes_pseudomonadota/ncbi_dataset/output"
+INPUT_DIR="/projects/p450/julia_tbg_contamination/genbank_files"
 
 # Create a temporary file list
 FILE_LIST=$(mktemp)
@@ -44,10 +44,9 @@ for LINE in $(seq ${START_LINE} ${END_LINE}); do
     FILE_NAME=$(basename "${FILE}")
 
     # Create output directory
-    OUTPUT_DIR="/path/to/output_directory/${SUB_DIR_NAME}_${FILE_NAME}"
-
+    OUTPUT_DIR="/projects/p450/julia_tbg_contamination/Tailenza_20_11_2023_output/${SUB_DIR_NAME}_${FILE_NAME}/"
     # Run your Python script with the necessary arguments
-    python "${PYTHON_SCRIPT}" -i "${FILE}" -o "${OUTPUT_DIR}" -f 15000 -t 5000 -c 1
+    python "${PYTHON_SCRIPT}" -i "${FILE}" -o "${OUTPUT_DIR}" -f 15000 -t 5000 -c 0.0
 done
 
 # Clean up

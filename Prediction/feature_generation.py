@@ -133,7 +133,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
         for fragment in converted_splitting_list:
             name_fragment = fragment[0]
             seqRecord_dict_per_fragment = split_alignment(SeqRecord(Seq(seqb), id=seqb), fragment, fastas_aligned_before)
-            fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment)
+            fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment, dtype=object)
     else:
         for record in alignment:
             if record.id == "Reference":
@@ -143,7 +143,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
                 for fragment in converted_splitting_list:
                     name_fragment = fragment[0]
                     seqRecord_dict_per_fragment = split_alignment(alignment, fragment, fastas_aligned_before)
-                    fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment)
+                    fragment_matrix[name_fragment] = pd.Series(seqRecord_dict_per_fragment, dtype=object)
                 break
 
     return fragment_matrix
