@@ -11,6 +11,17 @@ import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 import numpy as np
+import torch
+import esm
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+# Load the ESM-1b model
+model, alphabet = esm.pretrained.esm1b_t33_650M_UR50S()
+model = model.eval()
+batch_converter = alphabet.get_batch_converter()
 
 def merge_two_dicts(x, y):
     #input-> 2 dictionaries output->  merged dictionary
@@ -128,60 +139,50 @@ def fragment_alignment(alignment,splitting_list, fastas_aligned_before):
 
     return fragment_matrix
 
-def featurize(fragment_matrix, permutations, fragments, include_charge_features):
-    #create feature_matrix from fragment_matrix, count motifs in each fragemnt
-    feature_matrix=pd.DataFrame()
-    new_rows =[]
-    for index, row in fragment_matrix.iterrows():
-        new_row={}
-        for fragment in fragments:
-            sequence_fragment=row[fragment]
-
-            easysequence_fragment=easysequence(sequence_fragment)
-            for motif in permutations:
-                name_column=motif+fragment
-                new_row[name_column] = easysequence_fragment.count(motif)
-
-            if include_charge_features==True:
-                new_row=append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment)
-
-        new_rows += [new_row]
-    feature_matrix=feature_matrix.append(new_rows, ignore_index=True)
-    if include_charge_features==True:
-        feature_matrix=sum_charge_features(feature_matrix,fragments) 
-    return feature_matrix
 
 
-def append_charge_features(new_row,fragment,easysequence_fragment,sequence_fragment):
-    #append features indicating the charge to the feature matrix
-    acidic=fragment+"acidic"
-    new_row =merge_two_dicts(new_row,{acidic:(easysequence_fragment.count("a")/(len(easysequence_fragment)+1))})
-    acidic_absolute=fragment+"acidic absolute"
-    new_row =merge_two_dicts(new_row,{acidic_absolute:(easysequence_fragment.count("a"))})
-    charge_name=fragment+"charge"
-    new_row =merge_two_dicts(new_row,{charge_name:(calculate_charge(sequence_fragment))})
-    basic=fragment+"basic"
-    basic_absolute=fragment+"basic absolute"
-    new_row =merge_two_dicts(new_row,{basic:(easysequence_fragment.count("b")/(len(easysequence_fragment)+1))})
-    new_row =merge_two_dicts(new_row,{basic_absolute:(easysequence_fragment.count("b"))})
-    return new_row
 
-def sum_charge_features(feature_matrix, fragments):
-    #sum up charge features to obtain the charge of the whole protein
-    chargerows=[]
-    acidicrows=[]
-    basicrows=[]
-    absacidicrows=[]
-    absbasicrows=[]
-    for fragment in fragments:
-        chargerows.append(str(fragment)+"charge")
-        acidicrows.append(str(fragment)+"acidic")
-        basicrows.append(str(fragment)+"basic")
-        absacidicrows.append(str(fragment)+"acidic absolute")
-        absbasicrows.append(str(fragment)+"basic absolute")
-    feature_matrix['complete charge']=feature_matrix[chargerows].sum(axis=1)
-    feature_matrix['mean acidic']=feature_matrix[acidicrows].mean(axis=1)
-    feature_matrix['mean basic']=feature_matrix[basicrows].mean(axis=1)
-    feature_matrix['absolute acidic']=feature_matrix[absacidicrows].sum(axis=1)
-    feature_matrix['absolute basic']=feature_matrix[absbasicrows].sum(axis=1)
+def generate_transformer_embeddings(sequence_labels, sequence_strs, batch_converter, model):
+    """
+    Generate transformer embeddings for a list of sequences.
+    """
+    batch_labels, batch_strs, batch_tokens = batch_converter([(sequence_labels, sequence_strs)])
+    
+    with torch.no_grad():
+        results = model(batch_tokens, repr_layers=[33])
+        token_embeddings = results['representations'][33]
+    
+    # Average embeddings across the sequence length for a single vector representation
+    averaged_embeddings = token_embeddings.mean(dim=1)
+    return averaged_embeddings
+
+def featurize_fragments(fragment_matrix, batch_converter, model, include_charge_features=True):
+    """
+    Generate features for each fragment in the fragments dictionary.
+    """
+    for fragment_name in fragment_matrix.columns:
+        sequence_strs = fragment_matrix[fragment_name].dropna().tolist()  # Ensure to drop any NaN values
+        sequence_labels = [f"{fragment_name}_{i}" for i in range(len(sequence_strs))]
+        
+        # Generate embeddings
+        _, _, batch_tokens = batch_converter([(sequence_labels, sequence_strs)])
+        with torch.no_grad():
+            results = model(batch_tokens, repr_layers=[33])
+            token_embeddings = results["representations"][33]
+        
+        # Process embeddings
+        for i, embedding in enumerate(token_embeddings):
+            averaged_embedding = embedding.mean(dim=0).numpy().flatten()
+            feature_row = {f"{fragment_name}_emb_{idx}": val for idx, val in enumerate(averaged_embedding)}
+            
+            if include_charge_features:
+                sequence = sequence_strs[i]
+                charge = calculate_charge(sequence)
+                feature_row.update({
+                    f"{fragment_name}_charge": charge,
+                    # Additional charge features could be added here
+                })
+            
+            feature_matrix = feature_matrix.append(feature_row, ignore_index=True)
+
     return feature_matrix
