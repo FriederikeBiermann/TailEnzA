@@ -192,15 +192,38 @@ def fragment_means(embeddings, lengths):
     for embedding, length_row in zip(embeddings, lengths.itertuples(index=False)):
         start = 0
         means = []
+        # Log the length of embedding
+        logging.debug(f"Embedding length: {len(embedding[0])}")
         # Calculate mean for each fragment based on length
         for length in length_row:
-            if length > 0:  # Ensure there is at least one token to average
+            if length == 0:
+                # Ensure the zero tensor matches the expected dimensions of fragment embeddings
+                means.extend(
+                    torch.zeros(
+                        embedding.size(1),
+                        dtype=embedding.dtype,
+                        device=embedding.device,
+                    )
+                )
+            else:
                 fragment_embedding = embedding[start : start + length]
-                fragment_mean = fragment_embedding.mean(dim=0)
-                means.extend(fragment_mean)
-                start += length
+                # Safeguard against empty slices which should not occur if lengths are correct
+                if fragment_embedding.nelement() == 0:
+                    means.extend(
+                        torch.zeros(
+                            embedding.size(1),
+                            dtype=embedding.dtype,
+                            device=embedding.device,
+                        )
+                    )
+                else:
+                    fragment_mean = fragment_embedding.mean(dim=0)
+                    means.extend(fragment_mean)
+            start += length
         # Collect means for all fragments in the row
         fragment_results.append(torch.stack(means))
+    logging.debug(f"Fragment results shape: {fragment_results[0].shape}")
+    logging.debug(f"Fragment results length: {len(fragment_results)}")
     return fragment_results
 
 
@@ -208,20 +231,37 @@ def convert_embeddings_to_dataframe(embeddings, index, fragments):
     """
     Convert list of embedding tensors into a DataFrame.
     """
-    # Flatten each tensor and convert it into a list, then create a DataFrame from this list
+    # Flatten each tensor and convert to numpy
+    logging.debug(f"Embeddings shape: {len(embeddings)}")
+    logging.debug(f"Embedding shape: {embeddings[0].shape}")
     data = [tensor.numpy() for tensor in embeddings]
-    num_features_per_fragment = len(data[0]) / len(fragments)
+    logging.debug(f"Data shape: {data[0].shape}")
+    # Check total number of features
+    total_features = data[0].shape[0]
+    # Calculate number of features per fragment
+    if total_features % len(fragments) != 0:
+        logging.error(
+            "Total number of features is not evenly divisible by the number of fragments."
+        )
+        return None
+
+    num_features_per_fragment = total_features // len(fragments)
+
+    # Create column names
     columns = [
         f"{fragment}_{i}"
         for fragment in fragments
         for i in range(num_features_per_fragment)
     ]
-    logging.debug(f"Columns: {columns}")
-    logging.debug(f"Data: {data}")
-    logging.debug(f"Index: {index}")
-    logging.debug(f"Columns shape: {columns.shape}")
-    logging.debug(f"Data shape: {data.shape}")
-    return pd.DataFrame(data, index=index, columns=columns)
+
+    # Create DataFrame
+    try:
+        df = pd.DataFrame(data, index=index, columns=columns)
+    except Exception as e:
+        logging.error(f"Failed to create DataFrame: {e}")
+        return None
+
+    return df
 
 
 def featurize_fragments(
@@ -239,7 +279,6 @@ def featurize_fragments(
         fragment_matrix["Concatenated"].dropna().tolist()
     )  # Ensure to drop any NaN values
     logging.debug(f"Processing {len(sequence_strs)} sequences ")
-    logging.debug(f"Sequences: {sequence_strs}")
     logging.debug(f"Longest sequence: {max(len(s) for s in sequence_strs)}")
     sequence_labels = fragment_matrix.index.tolist()
     logging.debug(f"Labels: {sequence_labels}")
@@ -264,12 +303,12 @@ def featurize_fragments(
 
     # Calculate the length of each entry in the selected columns
     length_matrix = fragment_matrix[columns_to_process].fillna("").applymap(len)
-
+    logging.debug(f"Length matrix shape: {length_matrix.shape}")
+    logging.debug(f"Length matrix columns: {length_matrix.columns}")
     embedding_means_per_fragment = fragment_means(token_embeddings, length_matrix)
     logging.debug(f"Embedding means shape: {len(embedding_means_per_fragment)}")
-    logging.debug(f"Embedding means: {embedding_means_per_fragment}")
     embedding_df = convert_embeddings_to_dataframe(
-        embedding_means_per_fragment, original_index, fragment_matrix.columns
+        embedding_means_per_fragment, original_index, length_matrix.columns
     )
     if include_charge_features:
         charge_matrix = fragment_matrix.fillna("").applymap(calculate_charge)

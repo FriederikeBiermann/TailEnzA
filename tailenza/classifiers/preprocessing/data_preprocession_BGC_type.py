@@ -29,12 +29,7 @@ logging.basicConfig(
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
 foldername_training_sets = "training_data/Toy_dataset"
-foldername_output = os.path.join(
-    package_dir,
-    "data",
-    "classifiers",
-    "Test_transformer",
-)
+foldername_output = "preprocessed_data/Toy_dataset_transformer"
 
 # For debugging
 if DEBUGGING:
@@ -51,7 +46,7 @@ if DEBUGGING:
                 "sbr4": [297, 306],
                 "f5": [307, 362],
                 "sbr5": [363, 368],
-                "end": [369, 350],
+                "end": [369, 369],
             },
             "hmm_file": "ycao.hmm",
             "classifier_BGC_type": "_ExtraTreesClassifier_classifier.sav",
