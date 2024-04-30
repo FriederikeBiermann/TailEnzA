@@ -15,7 +15,7 @@ import esm
 import importlib.resources as pkg_resources
 import logging
 
-DEBUGGING = True
+DEBUGGING = False
 # if fastas aligned before True-> use alignment made for instance in geneious utilizing MUSCLE align -> best for larger datasets
 FASTAS_ALIGNED_BEFORE = True
 # if include_charge_features=True-> features describing general electrostatic information will be included
@@ -28,8 +28,8 @@ logging.basicConfig(
 
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
-foldername_training_sets = "training_data/Toy_dataset"
-foldername_output = "preprocessed_data/Toy_dataset_transformer"
+foldername_training_sets = "training_data/realigned_fastas_old"
+foldername_output = "preprocessed_data/dataset_transformer"
 
 # For debugging
 if DEBUGGING:
@@ -137,9 +137,11 @@ def process_datasets(
                     [complete_feature_matrix, feature_matrix], ignore_index=True
                 )
 
-    output_path = Path(foldername_output, "complete_feature_matrix.csv")
-    complete_feature_matrix.to_csv(output_path, index=False)
-    logging.info("Feature matrix saved to %s", output_path)
+        output_path = Path(
+            foldername_output, f"{enzyme}_metabolism_type_feature_matrix.csv"
+        )
+        complete_feature_matrix.to_csv(output_path, index=False)
+        logging.info("Feature matrix saved to %s", output_path)
 
 
 if __name__ == "__main__":

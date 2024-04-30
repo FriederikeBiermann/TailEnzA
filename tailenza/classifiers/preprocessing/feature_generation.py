@@ -18,6 +18,16 @@ from pathlib import Path
 import torch
 
 
+def filter_alignment(alignment, min_length, max_length):
+    # filter the alignment based on the length of the sequences
+    filtered_alignment = []
+    for record in alignment:
+        pure_length = len(record.seq.replace("-", ""))
+        if pure_length >= min_length and pure_length <= max_length:
+            filtered_alignment.append(record)
+    return filtered_alignment
+
+
 def merge_two_dicts(x, y):
     # input-> 2 dictionaries output->  merged dictionary
     z = x.copy()  # start with x's keys and values
@@ -124,6 +134,107 @@ def split_alignment(alignment, fragment, fastas_aligned_before):
     return seqRecord_array_per_fragment
 
 
+def trim_fragment_matrix(
+    fragment_matrix,
+    splitting_list,
+    length_threshold: int = 1024,
+    threshold_fragment: int = 100,
+) -> pd.DataFrame:
+    # trim sequences longer than the threshold to allow transformer processing
+    fragment_matrix["raw_length"] = (
+        fragment_matrix.fillna("").astype(str).apply("".join, axis=1).apply(len)
+    )
+    pd.set_option("display.max_rows", None)  # Set to None to display all rows
+    pd.set_option("display.max_columns", None)  # Set to None to display all columns
+    # pd.set_option(
+    #     "display.width", None
+    # )  # Set to None to ensure the console width fits the data
+    # pd.set_option(
+    #     "display.max_colwidth", None
+    # )  # Set to ensure complete data width is shown
+    logging.debug(f"Length threshold: {length_threshold}")
+    logging.debug(f"Threshold fragment: {threshold_fragment}")
+    logging.debug(f"Fragment matrix shape: {fragment_matrix.shape}")
+    long_rows = fragment_matrix["raw_length"].gt(length_threshold)
+    logging.debug(
+        f"Rows exceeding threshold: {fragment_matrix['raw_length'].gt(length_threshold).sum(), fragment_matrix['raw_length'].max(), fragment_matrix[long_rows]}"
+    )
+    lengths = {
+        col: fragment_matrix[long_rows][col]
+        .astype(str)
+        .apply(len)
+        .describe()  # Convert to string before applying len()
+        for col in fragment_matrix.columns[:-1]  # Excluding 'raw_length'
+    }
+    logging.debug(f"Modified column lengths: {lengths}")
+    for fragment, (start, end) in splitting_list.items():
+        normal_length = end - start + 1  # Calculate the normal length of the fragment
+        excessive_length = 3 * normal_length  # Calculate 3 times the normal length
+        logging.debug(
+            f"Fragment: {fragment}, Normal length: {normal_length}, Excessive length: {excessive_length}"
+        )
+
+        # If a fragment is 3* longer than usual and longer than 100 and longer than threshold, trim it
+        fragment_matrix[fragment] = fragment_matrix.apply(
+            lambda row: (
+                row[fragment][:normal_length]
+                if (
+                    len(row[fragment]) > excessive_length
+                    and len(row[fragment]) > threshold_fragment
+                    and row["raw_length"] > length_threshold
+                )
+                else row[fragment]
+            ),
+            axis=1,
+        )
+    logging.debug(f"Fragments after handling:  {fragment_matrix[long_rows]}")
+    lengths = {
+        col: fragment_matrix[long_rows][col]
+        .astype(str)
+        .apply(len)
+        .describe()  # Convert to string before applying len()
+        for col in fragment_matrix.columns[:-1]  # Excluding 'raw_length'
+    }
+    logging.debug(f"Modified column lengths: {lengths}")
+    # Recalculate raw_length after all modifications
+    fragment_matrix["raw_length"] = (
+        fragment_matrix.fillna("")
+        .astype(str)
+        .apply(
+            lambda row: sum(len(str(row[col])) for col in fragment_matrix.columns[:-1]),
+            axis=1,
+        )
+    )
+    # Check that after processing, the lengths are ok, if not, trim the sequences to the threshold
+    last_column = fragment_matrix.columns[-2]
+    fragment_matrix[last_column] = fragment_matrix.apply(
+        lambda row: (
+            row[last_column][
+                : len(row[last_column]) - (length_threshold - row["raw_length"])
+            ]
+            if row["raw_length"] > length_threshold
+            else row[last_column]
+        ),
+        axis=1,
+    )
+    # Recalculate raw_length after all modifications
+    fragment_matrix["raw_length"] = (
+        fragment_matrix.fillna("")
+        .astype(str)
+        .apply(
+            lambda row: sum(len(str(row[col])) for col in fragment_matrix.columns[:-1]),
+            axis=1,
+        )
+    )
+    logging.debug(f"Fragments after handling:  {fragment_matrix[long_rows]}")
+    logging.debug(f"Max raw length: {fragment_matrix['raw_length'].max()}")
+    assert (
+        fragment_matrix["raw_length"].max() <= length_threshold
+    ), "Error: Some raw_length values exceed the threshold."
+    fragment_matrix.drop(columns=["raw_length"], inplace=True)
+    return fragment_matrix
+
+
 def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
     # create a matrix from the splitted alignment
     fragment_matrix = pd.DataFrame()
@@ -162,6 +273,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
                     fragment_matrix[name_fragment] = seqRecord_list_per_fragment[:, 1]
                 fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:, 0]))
                 break
+    fragment_matrix = trim_fragment_matrix(fragment_matrix, splitting_list)
     fragment_matrix["Concatenated"] = (
         fragment_matrix.fillna("").astype(str).apply("".join, axis=1)
     )
