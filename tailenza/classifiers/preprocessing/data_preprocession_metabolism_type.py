@@ -6,7 +6,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import AlignIO
-from feature_generation import fragment_alignment, featurize_fragments
+from feature_generation import fragment_alignment, featurize_fragments, filter_alignment
 from tailenza.data.enzyme_information import BGC_types, enzymes
 from importlib.resources import files
 from pathlib import Path
@@ -131,6 +131,13 @@ def process_datasets(
                 logging.debug("Splitting list created for %s", enzyme)
                 logging.debug(splitting_list)
                 alignment = AlignIO.read(msa_path, "fasta")
+                min_length = enzymes[enzyme]["min_length"]
+                max_length = enzymes[enzyme]["max_length"]
+                logging.debug("Alignment loaded for %s", enzyme)
+                logging.debug(f"Length of alignment: {len(alignment)}")
+                alignment = filter_alignment(alignment, min_length, max_length)
+                logging.debug("Alignment filtered for %s", enzyme)
+                logging.debug(f"Length of filtered alignment: {len(alignment)}")
                 fragment_matrix = fragment_alignment(
                     alignment, splitting_list, FASTAS_ALIGNED_BEFORE
                 )

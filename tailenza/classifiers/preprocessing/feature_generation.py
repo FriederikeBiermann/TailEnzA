@@ -22,7 +22,7 @@ def filter_alignment(alignment, min_length, max_length):
     # filter the alignment based on the length of the sequences
     filtered_alignment = []
     for record in alignment:
-        pure_length = len(record.seq.replace("-", ""))
+        pure_length = len(str(record.seq).replace("-", ""))
         if pure_length >= min_length and pure_length <= max_length:
             filtered_alignment.append(record)
     return filtered_alignment
