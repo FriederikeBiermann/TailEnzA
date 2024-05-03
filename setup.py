@@ -6,18 +6,24 @@ def download_file(url, filename):
     """Helper function to download a file from a URL."""
     if not os.path.isfile(filename):
         print(f"{filename} not found, downloading...")
-        response = requests.get(url)
-        response.raise_for_status()  # Will raise an exception on a bad response
-        with open(filename, 'wb') as f:
-            f.write(response.content)
-        print(f"Downloaded {filename}")
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raises an HTTPError for bad responses
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+            print(f"Downloaded {filename}")
+        except requests.exceptions.HTTPError as err:
+            print(f"HTTP error occurred: {err}")  # Handle HTTP errors like 403, 404, etc.
+        except requests.exceptions.RequestException as err:
+            print(f"Error downloading {filename}: {err}")  # Handle other possible errors
+
     else:
         print(f"{filename} already exists.")
 
 # Define the filenames and their URLs
 files = {
-    "data/esm1b_t33_650M_UR50S-contact-regression.pt": "https://dl.fbaipublicfiles.com/fair-esm/models/esm1b_t33_650M_UR50S-contact-regression.pt",
-    "data/esm1b_t33_650M_UR50S.pt": "https://dl.fbaipublicfiles.com/fair-esm/models/esm1b_t33_650M_UR50S.pt"
+    "tailenza/data/esm1b_t33_650M_UR50S.pt": "https://dl.fbaipublicfiles.com/fair-esm/models/esm1b_t33_650M_UR50S.pt",
+    "tailenza/data/esm1b_t33_650M_UR50S-contact-regression.pt": "https://dl.fbaipublicfiles.com/fair-esm/regression/esm1b_t33_650M_UR50S-contact-regression.pt"
 }
 
 # Check each file and download if not present
