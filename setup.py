@@ -56,4 +56,13 @@ setuptools.setup(
         "tailenza": ["data/*.pt"],
     },
     python_requires=">=3.6",
+        install_requires=[
+        "biopython==1.7.8",
+        "scikit-learn==1.4.2",
+        "imbalanced-learn==0.12.2",
+        "pandas==2.2.2",
+        "fair-esm==2.0.0",
+        "torch==1.8.0",
+    ],
+    packages=find_packages()
 )
