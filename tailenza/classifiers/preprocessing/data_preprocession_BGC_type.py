@@ -22,7 +22,7 @@ FASTAS_ALIGNED_BEFORE = True
 INCLUDE_CHARGE_FEATURES = True
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 

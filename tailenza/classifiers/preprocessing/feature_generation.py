@@ -134,6 +134,22 @@ def split_alignment(alignment, fragment, fastas_aligned_before):
     return seqRecord_array_per_fragment
 
 
+def remove_incomplete_rows(fragment_matrix: pd.DataFrame) -> pd.DataFrame:
+    # Capture initial row count
+    initial_row_count = len(fragment_matrix)
+
+    # Drop any rows where any fragment is empty
+    fragment_matrix.replace("", pd.NA, inplace=True)
+    fragment_matrix = fragment_matrix.dropna(how="any")
+
+    # Capture new row count and calculate the number of dropped rows
+    final_row_count = len(fragment_matrix)
+    dropped_rows = initial_row_count - final_row_count
+    logging.info(f"Rows dropped due to empty fragments: {dropped_rows}")
+
+    return fragment_matrix
+
+
 def trim_fragment_matrix(
     fragment_matrix,
     splitting_list,
@@ -146,12 +162,6 @@ def trim_fragment_matrix(
     )
     pd.set_option("display.max_rows", None)  # Set to None to display all rows
     pd.set_option("display.max_columns", None)  # Set to None to display all columns
-    # pd.set_option(
-    #     "display.width", None
-    # )  # Set to None to ensure the console width fits the data
-    # pd.set_option(
-    #     "display.max_colwidth", None
-    # )  # Set to ensure complete data width is shown
     logging.debug(f"Length threshold: {length_threshold}")
     logging.debug(f"Threshold fragment: {threshold_fragment}")
     logging.debug(f"Fragment matrix shape: {fragment_matrix.shape}")
@@ -273,7 +283,9 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
                     fragment_matrix[name_fragment] = seqRecord_list_per_fragment[:, 1]
                 fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:, 0]))
                 break
+    fragment_matrix = remove_incomplete_rows(fragment_matrix)
     fragment_matrix = trim_fragment_matrix(fragment_matrix, splitting_list)
+
     fragment_matrix["Concatenated"] = (
         fragment_matrix.fillna("").astype(str).apply("".join, axis=1)
     )
