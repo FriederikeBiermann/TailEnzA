@@ -6,6 +6,7 @@ Created on Wed Feb 16 18:02:45 2022
 @author: friederike
 """
 
+import os
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
@@ -20,11 +21,17 @@ from sklearn.ensemble import (
 )
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import ExtraTreesClassifier
-from classification_methods import (
+from tailenza.classifiers.classification_methods import (
     plot_balanced_accuracies,
     plot_cross_val_scores_with_variance,
     train_classifier_and_get_accuracies,
     create_training_test_set,
+)
+from tailenza.data.enzyme_information import BGC_types, enzymes
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 names_classifiers = [
@@ -52,51 +59,41 @@ classifiers = [
 # define max depth of decision tree and other hyperparameters
 test_size = 0.5
 maxd = 15
-# fill in names of files here!
-# generate feature matrix with feature_generation.py first
-directory_feature_matrices = "/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/preprocessing_BGC/"
-foldername_output = "/projects/p450/Training_data_Tailenza_18_11_2023_hmmer_4_genes_from_biosynthetic_without_hybrids/classifiers_BGC/"
-enzymes = [
-    "TP_methylase",
-    "Methyltransf_2",
-    "Methyltransf_3",
-    "Methyltransf_25",
-    "P450",
-    "radical_SAM",
-    "ycao",
-]
-enzymes = ["Methyltransf_25", "P450", "radical_SAM", "ycao"]
-BGC_types = ["PKS", "Terpene", "Alkaloide", "NRPSs", "RiPPs"]
 
+# generate feature matrix with data_preprocession_BGC_type.py first
+directory_feature_matrices = "../preprocessing/preprocessed_data/dataset_transformer"
+foldername_output = "..classifiers/Test_transformer/"
 
-# go through all enzymes, split between test/training set and train classifiers on them
-for enzyme in enzymes:
-    all_cross_validation_scores = {}
-    all_balanced_accuracies = {}
-    path_feature_matrix = (
-        directory_feature_matrices + enzyme + "_complete_feature_matrix.csv"
-    )
-    x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(
-        path_feature_matrix, test_size
-    )
-    for classifier, name_classifier in zip(classifiers, names_classifiers):
-        (
-            all_cross_validation_scores[name_classifier + "_" + enzyme],
-            all_balanced_accuracies[name_classifier + "_" + enzyme],
-        ) = train_classifier_and_get_accuracies(
-            classifier,
-            name_classifier,
-            enzyme,
-            x_data,
-            y_data,
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            foldername_output,
-            BGC_types,
+def main():
+    # go through all enzymes, split between test/training set and train classifiers on them
+    for enzyme in enzymes:
+        all_cross_validation_scores = {}
+        all_balanced_accuracies = {}
+        path_feature_matrix = os.path.join(directory_feature_matrices, f"{enzyme}_BGC_type_feature_matrix.csv")
+        x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(
+            path_feature_matrix, test_size
         )
-    plot_cross_val_scores_with_variance(
-        all_cross_validation_scores, foldername_output, enzyme
-    )
-    plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
+        for classifier, name_classifier in zip(classifiers, names_classifiers):
+            (
+                all_cross_validation_scores[name_classifier + "_" + enzyme],
+                all_balanced_accuracies[name_classifier + "_" + enzyme],
+            ) = train_classifier_and_get_accuracies(
+                classifier,
+                name_classifier,
+                enzyme,
+                x_data,
+                y_data,
+                x_train,
+                y_train,
+                x_test,
+                y_test,
+                foldername_output,
+                BGC_types,
+            )
+        plot_cross_val_scores_with_variance(
+            all_cross_validation_scores, foldername_output, enzyme
+        )
+        plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
+
+if __name__=="__main__":
+    main()
