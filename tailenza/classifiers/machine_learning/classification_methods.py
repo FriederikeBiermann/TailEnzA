@@ -18,9 +18,65 @@ from sklearn.preprocessing import LabelBinarizer
 import seaborn as sns
 import numpy as np
 import os
+import logging
+import torch
 
 
 ros = RandomOverSampler(random_state=0)
+
+
+def train_pytorch_classifier(
+    model, criterion, optimizer, x_train, y_train, x_test, y_test, epochs=50
+):
+    model.train()
+    dataset = TensorDataset(
+        torch.tensor(x_train.astype(np.float32)), torch.tensor(y_train.astype(np.int64))
+    )
+    loader = DataLoader(dataset, batch_size=10, shuffle=True)
+
+    for epoch in range(epochs):
+        for inputs, targets in loader:
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+
+    # Evaluate the model
+    model.eval()
+    with torch.no_grad():
+        y_pred = model(torch.tensor(x_test.astype(np.float32))).argmax(dim=1).numpy()
+        f1_macro = f1_score(y_test, y_pred, average="macro")
+        f1_micro = f1_score(y_test, y_pred, average="micro")
+        f1_weighted = f1_score(y_test, y_pred, average="weighted")
+        balanced_acc = balanced_accuracy_score(y_test, y_pred)
+
+        # Generate probability outputs for ROC and log loss
+        outputs = model(torch.tensor(x_test.astype(np.float32)))
+        softmax = nn.Softmax(dim=1)
+        prob_outputs = softmax(outputs).numpy()
+
+        # Handling different class scenarios for AUC
+        lb = LabelBinarizer()
+        y_test_binarized = lb.fit_transform(y_test)
+        if y_test_binarized.shape[1] > 1:
+            auc_score = roc_auc_score(
+                y_test_binarized, prob_outputs, multi_class="ovr", average="macro"
+            )
+        else:
+            auc_score = roc_auc_score(y_test, prob_outputs[:, 1])
+
+        logloss = log_loss(y_test, prob_outputs)
+
+        # Log results
+        logging.info(f"Balanced Accuracy Score: {balanced_acc}")
+        logging.info(f"F1 Score Macro: {f1_macro}")
+        logging.info(f"F1 Score Micro: {f1_micro}")
+        logging.info(f"F1 Score Weighted: {f1_weighted}")
+        logging.info(f"AUC Score: {auc_score}")
+        logging.info(f"Log Loss: {logloss}")
+
+    return f1_macro, balanced_acc, auc_score, logloss
 
 
 def plot_balanced_accuracies(foldernameoutput, all_balanced_accuracies, enzyme):
@@ -225,8 +281,8 @@ def optimize_leaf_number(
         if balanced_accuracy_new > balanced_accuracy:
             bestminleaf = minleaf
             balanced_accuracy = balanced_accuracy_new
-        print(leafdiagr)
-    print("Best minimum samples per leaf:", bestminleaf)
+        logging.info(leafdiagr)
+    logging.info("Best minimum samples per leaf:", bestminleaf)
 
     # plot diagram of best minleaf
     plt.plot(
