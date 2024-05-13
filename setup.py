@@ -1,6 +1,7 @@
 import setuptools
 import os
 import requests
+from setuptools import setup, find_packages
 
 def download_file(url, filename):
     """Helper function to download a file from a URL."""
@@ -57,7 +58,7 @@ setuptools.setup(
     },
     python_requires=">=3.6",
         install_requires=[
-        "biopython==1.7.8",
+        "biopython==1.78",
         "scikit-learn==1.4.2",
         "imbalanced-learn==0.12.2",
         "pandas==2.2.2",
