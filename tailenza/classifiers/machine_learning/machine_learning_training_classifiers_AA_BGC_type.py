@@ -12,15 +12,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     RandomForestClassifier,
     AdaBoostClassifier,
-    BaggingClassifier,
-    VotingClassifier,
 )
 from sklearn.neural_network import MLPClassifier
 from classification_methods import (
@@ -38,7 +35,7 @@ logging.basicConfig(
 )
 
 
-# Define neural network architecture
+# Define the Simple Neural Network
 class SimpleNN(nn.Module):
     def __init__(self, in_features: int, num_classes: int):
         super(SimpleNN, self).__init__()
@@ -55,16 +52,84 @@ class SimpleNN(nn.Module):
         return x
 
 
+# Define the Convolutional Neural Network (CNN)
+class CNN(nn.Module):
+    def __init__(self, in_features: int, num_classes: int):
+        super(CNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.fc1 = nn.Linear(
+            64 * ((in_features - 1) // 4) * ((in_features - 1) // 4), 128
+        )
+        self.fc2 = nn.Linear(128, num_classes)
+
+    def forward(self, x):
+        x = self.pool(self.relu(self.conv1(x)))
+        x = self.pool(self.relu(self.conv2(x)))
+        x = x.view(-1, 64 * ((in_features - 1) // 4) * ((in_features - 1) // 4))
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+# Define the Recurrent Neural Network (RNN)
+class RNN(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int, num_classes: int):
+        super(RNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.rnn = nn.RNN(in_features, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.rnn(x, h0)
+        out = out[:, -1, :]
+        out = self.fc(out)
+        return out
+
+
+# Define the Long Short-Term Memory (LSTM)
+class LSTM(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int, num_classes: int):
+        super(LSTM, self).__init__()
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(in_features, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = out[:, -1, :]
+        out = self.fc(out)
+        return out
+
+
+# Update the list of classifier names and classifiers
 names_classifiers = [
     "SimpleNN",
+    "CNN",
+    "RNN",
+    "LSTM",
     "ExtraTreesClassifier",
     "RandomForestClassifier",
     "AdaBoostClassifier",
     "DecisionTreeClassifier",
     "MLPClassifier",
 ]
+
+unique_count_target = (
+    10  # Replace with the actual number of unique classes in your target variable
+)
+num_columns = 20  # Replace with the actual number of columns in your dataset
+
 classifiers = [
-    None,
+    SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
+    CNN(num_classes=unique_count_target, in_features=num_columns - 1),
+    RNN(in_features=num_columns - 1, hidden_size=20, num_classes=unique_count_target),
+    LSTM(in_features=num_columns - 1, hidden_size=20, num_classes=unique_count_target),
     ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
     AdaBoostClassifier(n_estimators=100),
@@ -74,7 +139,7 @@ classifiers = [
     ),
 ]
 
-# define max depth of decision tree and other hyperparameters
+# Define max depth of decision tree and other hyperparameters
 test_size = 0.5
 maxd = 15
 label_mapping = BGC_types
@@ -83,8 +148,7 @@ foldername_output = "../classifiers/Test_transformer/"
 
 
 def main():
-
-    # go through all enzymes, split between test/training set and train classifiers on them
+    # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
         all_cross_validation_scores = {}
         all_balanced_accuracies = {}
@@ -94,21 +158,49 @@ def main():
         df = pd.read_csv(path_feature_matrix)
         num_columns = df.shape[1]
         unique_count_target = df["target"].nunique()
-        model = SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1)
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+        models = [
+            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            CNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            RNN(
+                in_features=num_columns - 1,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            ),
+            LSTM(
+                in_features=num_columns - 1,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            ),
+        ]
+
+        criteria = [nn.CrossEntropyLoss() for _ in range(len(models))]
+        optimizers = [optim.Adam(model.parameters(), lr=0.001) for model in models]
+
         x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(
             path_feature_matrix, test_size
         )
-        classifiers[-1] = (
-            model,
-            criterion,
-            optimizer,
-        )  # Update the placeholder with actual PyTorch model
+
+        classifiers[0:4] = [
+            (model, criterion, optimizer)
+            for model, criterion, optimizer in zip(models, criteria, optimizers)
+        ]
+
         for classifier, name_classifier in zip(classifiers, names_classifiers):
-            if name_classifier == "SimpleNN":
+            if name_classifier in ["SimpleNN", "CNN", "RNN", "LSTM"]:
+                model, criterion, optimizer = classifier
                 metrics = train_pytorch_classifier(
-                    model, criterion, optimizer, x_train, y_train, x_test, y_test, label_mapping
+                    model,
+                    criterion,
+                    optimizer,
+                    x_train,
+                    y_train,
+                    x_test,
+                    y_test,
+                    name_classifier,
+                    enzyme,
+                    foldername_output,
+                    label_mapping,
                 )
             else:
                 (
@@ -127,6 +219,7 @@ def main():
                     foldername_output,
                     BGC_types,
                 )
+
         plot_cross_val_scores_with_variance(
             all_cross_validation_scores, foldername_output, enzyme
         )
