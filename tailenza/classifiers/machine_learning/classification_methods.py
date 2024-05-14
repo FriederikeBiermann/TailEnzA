@@ -1,8 +1,10 @@
 import pandas as pd
 from torch import nn
 from sklearn.metrics import classification_report, balanced_accuracy_score
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split, StratifiedKFold
 from imblearn.over_sampling import RandomOverSampler
+from torch.optim import Optimizer
+from torch.utils.tensorboard import SummaryWriter
 import pickle
 import matplotlib.pyplot as plt
 from sklearn.metrics import (
@@ -12,6 +14,7 @@ from sklearn.metrics import (
     log_loss,
     roc_auc_score,
     confusion_matrix,
+    ConfusionMatrixDisplay,
 )
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 import seaborn as sns
@@ -25,43 +28,74 @@ ros = RandomOverSampler(random_state=0)
 
 
 def train_pytorch_classifier(
-    model, criterion, optimizer, x_train, y_train, x_test, y_test, label_mapping,  epochs=50
+    model,
+    criterion,
+    optimizer,
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    name,
+    enzyme,
+    output_dir,
+    label_mapping,
+    epochs=50,
+    cv=5,
 ):
-    model.train()
-    
-    # Convert DataFrame to numpy arrays
-    x_train = x_train.to_numpy()
-    y_train = y_train.to_numpy()
-    x_test = x_test.to_numpy()
-    y_test = y_test.to_numpy()
-    
+    # Initialize SummaryWriter
+    writer = SummaryWriter()
+
+    # Create output directory if it doesn't exist
+    output_dir = os.path.join(output_dir, f"{enzyme}_{name}")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Apply RandomOverSampler
+    x_train_resampled, y_train_resampled = ros.fit_resample(x_train, y_train)
+
     # Encode string labels to integers based on the given label_mapping
     label_encoder = LabelEncoder()
     label_encoder.classes_ = np.array(label_mapping)
-    y_train_encoded = label_encoder.transform(y_train)
+    y_train_resampled_encoded = label_encoder.transform(y_train_resampled)
     y_test_encoded = label_encoder.transform(y_test)
 
+    model.train()
     dataset = TensorDataset(
-        torch.tensor(x_train.astype(np.float32)), torch.tensor(y_train_encoded.astype(np.int64))
+        torch.tensor(x_train_resampled.astype(np.float32)),
+        torch.tensor(y_train_resampled_encoded.astype(np.int64)),
     )
     loader = DataLoader(dataset, batch_size=10, shuffle=True)
 
+    loss_values = []
+
     for epoch in range(epochs):
-        for inputs, targets in loader:
+        running_loss = 0.0
+        for i, (inputs, targets) in enumerate(loader):
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
 
+            running_loss += loss.item()
+            if i % 10 == 9:  # Log every 10 batches
+                writer.add_scalar(
+                    "Training Loss", running_loss / 10, epoch * len(loader) + i
+                )
+                loss_values.append(running_loss / 10)
+                running_loss = 0.0
+
+        # Log histograms of model parameters
+        for name, param in model.named_parameters():
+            writer.add_histogram(name, param, epoch)
+
     # Evaluate the model
     model.eval()
     with torch.no_grad():
         y_pred = model(torch.tensor(x_test.astype(np.float32))).argmax(dim=1).numpy()
-        f1_macro = f1_score(y_test_encoded, y_pred, average="macro")
-        f1_micro = f1_score(y_test_encoded, y_pred, average="micro")
-        f1_weighted = f1_score(y_test_encoded, y_pred, average="weighted")
-        balanced_acc = balanced_accuracy_score(y_test_encoded, y_pred)
+        f1_macro = f1_score(y_train_resampled_encoded, y_pred, average="macro")
+        f1_micro = f1_score(y_train_resampled_encoded, y_pred, average="micro")
+        f1_weighted = f1_score(y_train_resampled_encoded, y_pred, average="weighted")
+        balanced_acc = balanced_accuracy_score(y_train_resampled_encoded, y_pred)
 
         # Generate probability outputs for ROC and log loss
         outputs = model(torch.tensor(x_test.astype(np.float32)))
@@ -70,17 +104,25 @@ def train_pytorch_classifier(
 
         # Handling different class scenarios for AUC
         lb = LabelBinarizer()
-        y_test_binarized = lb.fit_transform(y_test_encoded)
+        y_test_binarized = lb.fit_transform(y_train_resampled_encoded)
         if y_test_binarized.shape[1] > 1:
             auc_score = roc_auc_score(
                 y_test_binarized, prob_outputs, multi_class="ovr", average="macro"
             )
         else:
-            auc_score = roc_auc_score(y_test_encoded, prob_outputs[:, 1])
+            auc_score = roc_auc_score(y_train_resampled_encoded, prob_outputs[:, 1])
 
-        logloss = log_loss(y_test_encoded, prob_outputs)
+        logloss = log_loss(y_train_resampled_encoded, prob_outputs)
 
         # Log results
+        writer.add_scalar("Balanced Accuracy Score", balanced_acc, epoch)
+        writer.add_scalar("F1 Score Macro", f1_macro, epoch)
+        writer.add_scalar("F1 Score Micro", f1_micro, epoch)
+        writer.add_scalar("F1 Score Weighted", f1_weighted, epoch)
+        writer.add_scalar("AUC Score", auc_score, epoch)
+        writer.add_scalar("Log Loss", logloss, epoch)
+
+        logging.info(f"Name model: {name}")
         logging.info(f"Balanced Accuracy Score: {balanced_acc}")
         logging.info(f"F1 Score Macro: {f1_macro}")
         logging.info(f"F1 Score Micro: {f1_micro}")
@@ -88,7 +130,45 @@ def train_pytorch_classifier(
         logging.info(f"AUC Score: {auc_score}")
         logging.info(f"Log Loss: {logloss}")
 
-    return f1_macro, balanced_acc, auc_score, logloss
+        # Plot and save confusion matrix
+        cm = confusion_matrix(y_train_resampled_encoded, y_pred)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        disp.plot()
+        plt.title("Confusion Matrix")
+        confusion_matrix_path = os.path.join(output_dir, f"confusion_matrix_{name}.png")
+        plt.savefig(confusion_matrix_path)
+        plt.close()
+
+    # Close the SummaryWriter
+    writer.close()
+
+    # Plot and save the loss curve
+    plt.figure(figsize=(10, 5))
+    plt.plot(loss_values, label="Training Loss")
+    plt.xlabel("Batch")
+    plt.ylabel("Loss")
+    plt.title("Training Loss Curve")
+    plt.legend()
+    loss_curve_path = os.path.join(output_dir, f"loss_curve_{name}.png")
+    plt.savefig(loss_curve_path)
+    plt.close()
+
+    # Save the trained model
+    model_path = os.path.join(output_dir, f"{name}_model.pth")
+    torch.save(model.state_dict(), model_path)
+
+    # Perform cross-validation and log results
+    skf = StratifiedKFold(n_splits=cv)
+    cross_val_scores = cross_val_score(
+        model, x_train, y_train, cv=skf, scoring="f1_macro"
+    )
+    logging.info(f"Cross-Validation F1 Macro Scores: {cross_val_scores}")
+    cross_val_mean = cross_val_scores.mean()
+    cross_val_std = cross_val_scores.std()
+    logging.info(f"Cross-Validation F1 Macro Mean: {cross_val_mean}")
+    logging.info(f"Cross-Validation F1 Macro Std: {cross_val_std}")
+
+    return f1_macro, balanced_acc, auc_score, logloss, cross_val_mean, cross_val_std
 
 
 def plot_balanced_accuracies(foldernameoutput, all_balanced_accuracies, enzyme):
