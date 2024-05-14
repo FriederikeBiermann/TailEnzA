@@ -23,7 +23,7 @@ from sklearn.ensemble import (
     VotingClassifier,
 )
 from sklearn.neural_network import MLPClassifier
-from tailenza.classifiers.classification_methods import (
+from classification_methods import (
     plot_balanced_accuracies,
     plot_cross_val_scores_with_variance,
     train_classifier_and_get_accuracies,
@@ -34,7 +34,7 @@ from tailenza.data.enzyme_information import BGC_types, enzymes
 import logging
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
@@ -56,14 +56,15 @@ class SimpleNN(nn.Module):
 
 
 names_classifiers = [
+    "SimpleNN",
     "ExtraTreesClassifier",
     "RandomForestClassifier",
     "AdaBoostClassifier",
     "DecisionTreeClassifier",
     "MLPClassifier",
-    "SimpleNN",
 ]
 classifiers = [
+    None,
     ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
     AdaBoostClassifier(n_estimators=100),
@@ -71,13 +72,12 @@ classifiers = [
     MLPClassifier(
         solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
     ),
-    None,  # Placeholder for the PyTorch model
 ]
 
 # define max depth of decision tree and other hyperparameters
 test_size = 0.5
 maxd = 15
-
+label_mapping = BGC_types
 directory_feature_matrices = "../preprocessing/preprocessed_data/dataset_transformer"
 foldername_output = "../classifiers/Test_transformer/"
 
@@ -108,7 +108,7 @@ def main():
         for classifier, name_classifier in zip(classifiers, names_classifiers):
             if name_classifier == "SimpleNN":
                 metrics = train_pytorch_classifier(
-                    model, criterion, optimizer, x_train, y_train, x_test, y_test
+                    model, criterion, optimizer, x_train, y_train, x_test, y_test, label_mapping
                 )
             else:
                 (

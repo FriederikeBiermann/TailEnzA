@@ -1,4 +1,5 @@
 import pandas as pd
+from torch import nn
 from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.model_selection import cross_val_score, train_test_split
 from imblearn.over_sampling import RandomOverSampler
@@ -7,31 +8,41 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (
     balanced_accuracy_score,
     classification_report,
-    plot_confusion_matrix,
-    cross_val_score,
     f1_score,
     log_loss,
     roc_auc_score,
     confusion_matrix,
 )
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 import seaborn as sns
 import numpy as np
 import os
 import logging
 import torch
-from torch import TensorDataset, DataLoader
-
+from torch.utils.data import TensorDataset, DataLoader
 
 ros = RandomOverSampler(random_state=0)
 
 
 def train_pytorch_classifier(
-    model, criterion, optimizer, x_train, y_train, x_test, y_test, epochs=50
+    model, criterion, optimizer, x_train, y_train, x_test, y_test, label_mapping,  epochs=50
 ):
     model.train()
+    
+    # Convert DataFrame to numpy arrays
+    x_train = x_train.to_numpy()
+    y_train = y_train.to_numpy()
+    x_test = x_test.to_numpy()
+    y_test = y_test.to_numpy()
+    
+    # Encode string labels to integers based on the given label_mapping
+    label_encoder = LabelEncoder()
+    label_encoder.classes_ = np.array(label_mapping)
+    y_train_encoded = label_encoder.transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
+
     dataset = TensorDataset(
-        torch.tensor(x_train.astype(np.float32)), torch.tensor(y_train.astype(np.int64))
+        torch.tensor(x_train.astype(np.float32)), torch.tensor(y_train_encoded.astype(np.int64))
     )
     loader = DataLoader(dataset, batch_size=10, shuffle=True)
 
@@ -47,10 +58,10 @@ def train_pytorch_classifier(
     model.eval()
     with torch.no_grad():
         y_pred = model(torch.tensor(x_test.astype(np.float32))).argmax(dim=1).numpy()
-        f1_macro = f1_score(y_test, y_pred, average="macro")
-        f1_micro = f1_score(y_test, y_pred, average="micro")
-        f1_weighted = f1_score(y_test, y_pred, average="weighted")
-        balanced_acc = balanced_accuracy_score(y_test, y_pred)
+        f1_macro = f1_score(y_test_encoded, y_pred, average="macro")
+        f1_micro = f1_score(y_test_encoded, y_pred, average="micro")
+        f1_weighted = f1_score(y_test_encoded, y_pred, average="weighted")
+        balanced_acc = balanced_accuracy_score(y_test_encoded, y_pred)
 
         # Generate probability outputs for ROC and log loss
         outputs = model(torch.tensor(x_test.astype(np.float32)))
@@ -59,15 +70,15 @@ def train_pytorch_classifier(
 
         # Handling different class scenarios for AUC
         lb = LabelBinarizer()
-        y_test_binarized = lb.fit_transform(y_test)
+        y_test_binarized = lb.fit_transform(y_test_encoded)
         if y_test_binarized.shape[1] > 1:
             auc_score = roc_auc_score(
                 y_test_binarized, prob_outputs, multi_class="ovr", average="macro"
             )
         else:
-            auc_score = roc_auc_score(y_test, prob_outputs[:, 1])
+            auc_score = roc_auc_score(y_test_encoded, prob_outputs[:, 1])
 
-        logloss = log_loss(y_test, prob_outputs)
+        logloss = log_loss(y_test_encoded, prob_outputs)
 
         # Log results
         logging.info(f"Balanced Accuracy Score: {balanced_acc}")
@@ -244,9 +255,6 @@ def train_classifier_and_get_accuracies(
         name_classifier,
         BGC_types,
         foldernameoutput,
-    )
-    plot_cross_val_scores_with_variance(
-        cross_validation_classifier, foldernameoutput, enzyme
     )
     # if hasattr(classifier, 'feature_importances_'):
     # plot_feature_importance(classifier.feature_importances_, x_data.columns, name_classifier, enzyme, foldernameoutput)
