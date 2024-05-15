@@ -125,14 +125,48 @@ class CNN(nn.Module):
 
 # Define the Recurrent Neural Network (RNN)
 class RNN(nn.Module):
-    def __init__(self, in_features: int, hidden_size: int, num_classes: int):
+    def __init__(
+        self, in_features: int, hidden_size: int, num_fragments: int, num_classes: int
+    ):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
         self.rnn = nn.RNN(in_features, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, num_classes)
+        self.num_fragments = num_fragments
 
     def forward(self, x):
+        # Remove the last feature
+        x = x[:, :-1]
+
+        # Extract charge features (last num_fragments features)
+        charges = x[:, -self.num_fragments :]
+
+        # Extract main features (all but last num_fragments features)
+        main_features = x[:, : -self.num_fragments]
+
+        # Debugging: Print shapes
+        logging.info(f"Input shape: {x.shape}")
+        logging.info(f"Main features shape: {main_features.shape}")
+        logging.info(f"Charges shape: {charges.shape}")
+
+        # Reshape main features to (batch_size, num_fragments, features_per_fragment)
+        batch_size = x.size(0)
+        seq_length = self.num_fragments
+        input_size = main_features.size(1) // self.num_fragments
+        main_features = main_features.view(batch_size, seq_length, input_size)
+
+        # Reshape charges to match the sequence shape (batch_size, num_fragments, 1)
+        charges = charges.view(batch_size, seq_length, 1)
+
+        # Combine main features and charges along the last dimension
+        x = torch.cat((main_features, charges), dim=2)
+
+        # Debugging: Print the shape after concatenation
+        logging.info(f"Combined shape: {x.shape}")
+
+        # Initialize hidden state
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
+
         out, _ = self.rnn(x, h0)
         out = out[:, -1, :]
         out = self.fc(out)
@@ -158,9 +192,9 @@ class LSTM(nn.Module):
 
 # Update the list of classifier names and classifiers
 names_classifiers = [
+    "RNN",
     "CNN",
     "SimpleNN",
-    "RNN",
     "LSTM",
     "ExtraTreesClassifier",
     "RandomForestClassifier",
@@ -210,17 +244,18 @@ def main():
         unique_count_target = df["target"].nunique()
         num_fragments = len(enzymes[enzyme].splitting_list)
         models = [
-            CNN(
-                total_features=num_columns - 1,
-                num_fragments=num_fragments,
-                num_classes=5,
-            ),
-            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
             RNN(
                 in_features=num_columns - 1,
                 hidden_size=20,
                 num_classes=unique_count_target,
+                num_fragments=num_fragments,
             ),
+            CNN(
+                total_features=num_columns - 1,
+                num_fragments=num_fragments,
+                num_classes=unique_count_target,
+            ),
+            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
             LSTM(
                 in_features=num_columns - 1,
                 hidden_size=20,
