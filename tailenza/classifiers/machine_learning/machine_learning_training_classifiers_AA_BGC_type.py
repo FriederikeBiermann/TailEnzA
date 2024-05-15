@@ -90,6 +90,11 @@ class CNN(nn.Module):
         # Extract main features (all but last num_fragments features)
         main_features = x[:, : -self.num_fragments]
 
+        # Debugging: Print shapes
+        logging.INFO(f"Input shape: {x.shape}")
+        logging.INFO(f"Main features shape: {main_features.shape}")
+        logging.INFO(f"Charges shape: {charges.shape}")
+
         # Reshape main features to (batch_size, 1, num_fragments, features_per_fragment)
         batch_size = x.size(0)
         main_features = main_features.view(
@@ -105,8 +110,11 @@ class CNN(nn.Module):
         # Combine main features and charges along the channel dimension
         x = torch.cat((main_features, charges), dim=1)
 
+        # Debugging: Print the shape after concatenation
+        logging.INFO(f"Combined shape: {x.shape}")
+
         x = self.pool(self.relu(self.conv1(x)))
-        x = x = self.pool(self.relu(self.conv2(x)))
+        x = self.pool(self.relu(self.conv2(x)))
 
         x = x.view(batch_size, -1)
         x = self.relu(self.fc1(x))
@@ -150,8 +158,8 @@ class LSTM(nn.Module):
 
 # Update the list of classifier names and classifiers
 names_classifiers = [
-    "SimpleNN",
     "CNN",
+    "SimpleNN",
     "RNN",
     "LSTM",
     "ExtraTreesClassifier",
@@ -202,12 +210,12 @@ def main():
         unique_count_target = df["target"].nunique()
         num_fragments = len(enzymes[enzyme].splitting_list)
         models = [
-            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
             CNN(
                 total_features=num_columns - 1,
                 num_fragments=num_fragments,
                 num_classes=5,
             ),
+            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
             RNN(
                 in_features=num_columns - 1,
                 hidden_size=20,
