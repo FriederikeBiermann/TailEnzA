@@ -189,7 +189,7 @@ def main():
         for classifier, name_classifier in zip(classifiers, names_classifiers):
             if name_classifier in ["SimpleNN", "CNN", "RNN", "LSTM"]:
                 model, criterion, optimizer = classifier
-                metrics = train_pytorch_classifier(
+                f1_macro, balanced_acc, auc_score, logloss = train_pytorch_classifier(
                     model,
                     criterion,
                     optimizer,
@@ -202,6 +202,7 @@ def main():
                     foldername_output,
                     label_mapping,
                 )
+                all_balanced_accuracies[name_classifier + "_" + enzyme] = balanced_acc
             else:
                 (
                     all_cross_validation_scores[name_classifier + "_" + enzyme],
@@ -220,9 +221,6 @@ def main():
                     BGC_types,
                 )
 
-        plot_cross_val_scores_with_variance(
-            all_cross_validation_scores, foldername_output, enzyme
-        )
         plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
 
 
