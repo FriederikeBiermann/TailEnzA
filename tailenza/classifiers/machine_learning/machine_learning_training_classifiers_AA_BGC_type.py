@@ -60,17 +60,27 @@ class CNN(nn.Module):
         self.relu = nn.ReLU()
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(
-            64 * ((in_features - 1) // 4) * ((in_features - 1) // 4), 128
-        )
+
+        # Calculate the correct size for the fully connected layer input
+        self.fc1_input_dim = 64 * (in_features // 4) * (in_features // 4)
+        self.fc1 = nn.Linear(self.fc1_input_dim, 128)
         self.fc2 = nn.Linear(128, num_classes)
+        self.in_features = in_features
 
     def forward(self, x):
+        # Reshape the input to match the expected 4D tensor: (batch_size, channels, height, width)
+        batch_size = x.size(0)
+        x = x.view(
+            batch_size, 1, int(self.in_features**0.5), int(self.in_features**0.5)
+        )
+
         x = self.pool(self.relu(self.conv1(x)))
         x = self.pool(self.relu(self.conv2(x)))
-        x = x.view(-1, 64 * ((in_features - 1) // 4) * ((in_features - 1) // 4))
+
+        x = x.view(batch_size, -1)
         x = self.relu(self.fc1(x))
         x = self.fc2(x)
+
         return x
 
 
