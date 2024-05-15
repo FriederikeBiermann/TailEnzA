@@ -54,28 +54,59 @@ class SimpleNN(nn.Module):
 
 # Define the Convolutional Neural Network (CNN)
 class CNN(nn.Module):
-    def __init__(self, in_features: int, num_classes: int):
+    def __init__(self, total_features: int, num_fragments: int, num_classes: int):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+        self.num_fragments = num_fragments
+
+        # Calculate the features per fragment
+        self.features_per_fragment = (
+            total_features - num_fragments - 1
+        ) // num_fragments
+        assert (
+            total_features - num_fragments - 1
+        ) % num_fragments == 0, "Total features do not evenly divide into fragments"
+
+        self.conv1 = nn.Conv2d(
+            2, 32, kernel_size=3, stride=1, padding=1
+        )  # 2 channels: 1 for features, 1 for charges
         self.relu = nn.ReLU()
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
 
         # Calculate the correct size for the fully connected layer input
-        self.fc1_input_dim = 64 * (in_features // 4) * (in_features // 4)
+        self.fc1_input_dim = (
+            64 * (self.num_fragments // 4) * (self.features_per_fragment // 4)
+        )
         self.fc1 = nn.Linear(self.fc1_input_dim, 128)
         self.fc2 = nn.Linear(128, num_classes)
-        self.in_features = in_features
 
     def forward(self, x):
-        # Reshape the input to match the expected 4D tensor: (batch_size, channels, height, width)
+        # Remove the last feature
+        x = x[:, :-1]
+
+        # Extract charge features (last num_fragments features)
+        charges = x[:, -self.num_fragments :]
+
+        # Extract main features (all but last num_fragments features)
+        main_features = x[:, : -self.num_fragments]
+
+        # Reshape main features to (batch_size, 1, num_fragments, features_per_fragment)
         batch_size = x.size(0)
-        x = x.view(
-            batch_size, 1, int(self.in_features**0.5), int(self.in_features**0.5)
+        main_features = main_features.view(
+            batch_size, 1, self.num_fragments, self.features_per_fragment
         )
 
+        # Reshape charges to match the fragments shape (batch_size, 1, num_fragments, 1)
+        charges = charges.view(batch_size, 1, self.num_fragments, 1)
+
+        # Repeat charges to match the feature dimension (batch_size, 1, num_fragments, features_per_fragment)
+        charges = charges.repeat(1, 1, 1, self.features_per_fragment)
+
+        # Combine main features and charges along the channel dimension
+        x = torch.cat((main_features, charges), dim=1)
+
         x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
+        x = x = self.pool(self.relu(self.conv2(x)))
 
         x = x.view(batch_size, -1)
         x = self.relu(self.fc1(x))
@@ -135,11 +166,12 @@ unique_count_target = (
 )
 num_columns = 20  # Replace with the actual number of columns in your dataset
 
+# None as placeholders for specific classifiers in pytorch
 classifiers = [
-    SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
-    CNN(num_classes=unique_count_target, in_features=num_columns - 1),
-    RNN(in_features=num_columns - 1, hidden_size=20, num_classes=unique_count_target),
-    LSTM(in_features=num_columns - 1, hidden_size=20, num_classes=unique_count_target),
+    None,
+    None,
+    None,
+    None,
     ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
     AdaBoostClassifier(n_estimators=100),
@@ -168,10 +200,14 @@ def main():
         df = pd.read_csv(path_feature_matrix)
         num_columns = df.shape[1]
         unique_count_target = df["target"].nunique()
-
+        num_fragments = len(enzymes[enzyme].splitting_list)
         models = [
             SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
-            CNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            CNN(
+                total_features=num_columns - 1,
+                num_fragments=num_fragments,
+                num_classes=5,
+            ),
             RNN(
                 in_features=num_columns - 1,
                 hidden_size=20,
