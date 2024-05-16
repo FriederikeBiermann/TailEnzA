@@ -90,10 +90,6 @@ class CNN(nn.Module):
         # Extract main features (all but last num_fragments features)
         main_features = x[:, : -self.num_fragments]
 
-        # Debugging: Print shapes
-        logging.INFO(f"Input shape: {x.shape}")
-        logging.INFO(f"Main features shape: {main_features.shape}")
-        logging.INFO(f"Charges shape: {charges.shape}")
 
         # Reshape main features to (batch_size, 1, num_fragments, features_per_fragment)
         batch_size = x.size(0)
@@ -110,8 +106,6 @@ class CNN(nn.Module):
         # Combine main features and charges along the channel dimension
         x = torch.cat((main_features, charges), dim=1)
 
-        # Debugging: Print the shape after concatenation
-        logging.INFO(f"Combined shape: {x.shape}")
 
         x = self.pool(self.relu(self.conv1(x)))
         x = self.pool(self.relu(self.conv2(x)))
@@ -130,10 +124,14 @@ class RNN(nn.Module):
     ):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
-        self.rnn = nn.RNN(in_features, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, num_classes)
-        self.num_fragments = num_fragments
 
+        self.num_fragments = num_fragments
+        self.features_per_fragment = (in_features - num_fragments - 1) // num_fragments + 1
+        assert (
+            in_features - num_fragments - 1
+        ) % num_fragments == 0, "Total features do not evenly divide into fragments"
+        self.rnn = nn.RNN(self.features_per_fragment, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
     def forward(self, x):
         # Remove the last feature
         x = x[:, :-1]
@@ -144,10 +142,6 @@ class RNN(nn.Module):
         # Extract main features (all but last num_fragments features)
         main_features = x[:, : -self.num_fragments]
 
-        # Debugging: Print shapes
-        logging.info(f"Input shape: {x.shape}")
-        logging.info(f"Main features shape: {main_features.shape}")
-        logging.info(f"Charges shape: {charges.shape}")
 
         # Reshape main features to (batch_size, num_fragments, features_per_fragment)
         batch_size = x.size(0)
@@ -161,8 +155,6 @@ class RNN(nn.Module):
         # Combine main features and charges along the last dimension
         x = torch.cat((main_features, charges), dim=2)
 
-        # Debugging: Print the shape after concatenation
-        logging.info(f"Combined shape: {x.shape}")
 
         # Initialize hidden state
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
@@ -242,7 +234,7 @@ def main():
         df = pd.read_csv(path_feature_matrix)
         num_columns = df.shape[1]
         unique_count_target = df["target"].nunique()
-        num_fragments = len(enzymes[enzyme].splitting_list)
+        num_fragments = len(enzymes[enzyme]["splitting_list"])
         models = [
             RNN(
                 in_features=num_columns - 1,

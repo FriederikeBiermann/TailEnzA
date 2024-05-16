@@ -44,11 +44,14 @@ def train_pytorch_classifier(
 ):
     # Initialize SummaryWriter
     writer = SummaryWriter()
-
+    logging.info(f"Processing model {name}")
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, f"{enzyme}_{name}")
     os.makedirs(output_dir, exist_ok=True)
-
+    x_train = x_train.to_numpy()
+    y_train = y_train.to_numpy()
+    x_test = x_test.to_numpy()
+    y_test = y_test.to_numpy()
     # Apply RandomOverSampler
     x_train_resampled, y_train_resampled = ros.fit_resample(x_train, y_train)
 
@@ -92,10 +95,10 @@ def train_pytorch_classifier(
     model.eval()
     with torch.no_grad():
         y_pred = model(torch.tensor(x_test.astype(np.float32))).argmax(dim=1).numpy()
-        f1_macro = f1_score(y_train_resampled_encoded, y_pred, average="macro")
-        f1_micro = f1_score(y_train_resampled_encoded, y_pred, average="micro")
-        f1_weighted = f1_score(y_train_resampled_encoded, y_pred, average="weighted")
-        balanced_acc = balanced_accuracy_score(y_train_resampled_encoded, y_pred)
+        f1_macro = f1_score(y_test_encoded, y_pred, average="macro")
+        f1_micro = f1_score(y_test_encoded, y_pred, average="micro")
+        f1_weighted = f1_score(y_test_encoded, y_pred, average="weighted")
+        balanced_acc = balanced_accuracy_score(y_test_encoded, y_pred)
 
         # Generate probability outputs for ROC and log loss
         outputs = model(torch.tensor(x_test.astype(np.float32)))
@@ -104,15 +107,15 @@ def train_pytorch_classifier(
 
         # Handling different class scenarios for AUC
         lb = LabelBinarizer()
-        y_test_binarized = lb.fit_transform(y_train_resampled_encoded)
+        y_test_binarized = lb.fit_transform(y_test_encoded)
         if y_test_binarized.shape[1] > 1:
             auc_score = roc_auc_score(
                 y_test_binarized, prob_outputs, multi_class="ovr", average="macro"
             )
         else:
-            auc_score = roc_auc_score(y_train_resampled_encoded, prob_outputs[:, 1])
+            auc_score = roc_auc_score(y_test_encoded, prob_outputs[:, 1])
 
-        logloss = log_loss(y_train_resampled_encoded, prob_outputs)
+        logloss = log_loss(y_test_encoded, prob_outputs)
 
         # Log results
         writer.add_scalar("Balanced Accuracy Score", balanced_acc, epoch)
@@ -131,7 +134,7 @@ def train_pytorch_classifier(
         logging.info(f"Log Loss: {logloss}")
 
         # Plot and save confusion matrix
-        cm = confusion_matrix(y_train_resampled_encoded, y_pred)
+        cm = confusion_matrix(y_test_encoded, y_pred)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm)
         disp.plot()
         plt.title("Confusion Matrix")
@@ -157,18 +160,8 @@ def train_pytorch_classifier(
     model_path = os.path.join(output_dir, f"{name}_model.pth")
     torch.save(model.state_dict(), model_path)
 
-    # Perform cross-validation and log results
-    skf = StratifiedKFold(n_splits=cv)
-    cross_val_scores = cross_val_score(
-        model, x_train, y_train, cv=skf, scoring="f1_macro"
-    )
-    logging.info(f"Cross-Validation F1 Macro Scores: {cross_val_scores}")
-    cross_val_mean = cross_val_scores.mean()
-    cross_val_std = cross_val_scores.std()
-    logging.info(f"Cross-Validation F1 Macro Mean: {cross_val_mean}")
-    logging.info(f"Cross-Validation F1 Macro Std: {cross_val_std}")
 
-    return f1_macro, balanced_acc, auc_score, logloss, cross_val_mean, cross_val_std
+    return f1_macro, balanced_acc, auc_score, logloss
 
 
 def plot_balanced_accuracies(foldernameoutput, all_balanced_accuracies, enzyme):
