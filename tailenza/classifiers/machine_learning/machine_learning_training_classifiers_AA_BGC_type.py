@@ -90,7 +90,6 @@ class CNN(nn.Module):
         # Extract main features (all but last num_fragments features)
         main_features = x[:, : -self.num_fragments]
 
-
         # Reshape main features to (batch_size, 1, num_fragments, features_per_fragment)
         batch_size = x.size(0)
         main_features = main_features.view(
@@ -105,7 +104,6 @@ class CNN(nn.Module):
 
         # Combine main features and charges along the channel dimension
         x = torch.cat((main_features, charges), dim=1)
-
 
         x = self.pool(self.relu(self.conv1(x)))
         x = self.pool(self.relu(self.conv2(x)))
@@ -126,12 +124,15 @@ class RNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.num_fragments = num_fragments
-        self.features_per_fragment = (in_features - num_fragments - 1) // num_fragments + 1
+        self.features_per_fragment = (
+            in_features - num_fragments - 1
+        ) // num_fragments + 1
         assert (
             in_features - num_fragments - 1
         ) % num_fragments == 0, "Total features do not evenly divide into fragments"
         self.rnn = nn.RNN(self.features_per_fragment, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, num_classes)
+
     def forward(self, x):
         # Remove the last feature
         x = x[:, :-1]
@@ -141,7 +142,6 @@ class RNN(nn.Module):
 
         # Extract main features (all but last num_fragments features)
         main_features = x[:, : -self.num_fragments]
-
 
         # Reshape main features to (batch_size, num_fragments, features_per_fragment)
         batch_size = x.size(0)
@@ -154,7 +154,6 @@ class RNN(nn.Module):
 
         # Combine main features and charges along the last dimension
         x = torch.cat((main_features, charges), dim=2)
-
 
         # Initialize hidden state
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
@@ -174,6 +173,12 @@ class LSTM(nn.Module):
         self.fc = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
+        # Ensure input has three dimensions
+        if len(x.shape) == 2:
+            x = x.unsqueeze(1)  # Add a sequence length dimension
+        elif len(x.shape) != 3:
+            raise RuntimeError(f"Input must have 3 dimensions, got {x.shape}")
+
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
         c0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
         out, _ = self.lstm(x, (h0, c0))
