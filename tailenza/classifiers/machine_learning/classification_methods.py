@@ -35,7 +35,7 @@ def train_pytorch_classifier(
     y_train,
     x_test,
     y_test,
-    name,
+    name_classifier,
     enzyme,
     output_dir,
     label_mapping,
@@ -44,9 +44,9 @@ def train_pytorch_classifier(
 ):
     # Initialize SummaryWriter
     writer = SummaryWriter()
-    logging.info(f"Processing model {name}")
+    logging.info(f"Processing model {name_classifier}")
     # Create output directory if it doesn't exist
-    output_dir = os.path.join(output_dir, f"{enzyme}_{name}")
+    output_dir = os.path.join(output_dir, f"{enzyme}_{name_classifier}")
     os.makedirs(output_dir, exist_ok=True)
     x_train = x_train.to_numpy()
     y_train = y_train.to_numpy()
@@ -88,8 +88,8 @@ def train_pytorch_classifier(
                 running_loss = 0.0
 
         # Log histograms of model parameters
-        for name, param in model.named_parameters():
-            writer.add_histogram(name, param, epoch)
+        for name_classifier, param in model.named_parameters():
+            writer.add_histogram(name_classifier, param, epoch)
 
     # Evaluate the model
     model.eval()
@@ -125,7 +125,7 @@ def train_pytorch_classifier(
         writer.add_scalar("AUC Score", auc_score, epoch)
         writer.add_scalar("Log Loss", logloss, epoch)
 
-        logging.info(f"Name model: {name}")
+        logging.info(f"Name model: {name_classifier}")
         logging.info(f"Balanced Accuracy Score: {balanced_acc}")
         logging.info(f"F1 Score Macro: {f1_macro}")
         logging.info(f"F1 Score Micro: {f1_micro}")
@@ -138,9 +138,23 @@ def train_pytorch_classifier(
         disp = ConfusionMatrixDisplay(confusion_matrix=cm)
         disp.plot()
         plt.title("Confusion Matrix")
-        confusion_matrix_path = os.path.join(output_dir, f"confusion_matrix_{name}.png")
-        plt.savefig(confusion_matrix_path)
-        plt.close()
+        confusion_matrix_path = os.path.join(
+            output_dir, f"confusion_matrix_{name_classifier}_{enzyme}.png"
+        )
+        plot_confusion_matrix(
+            y_test_encoded, y_pred, enzyme, name_classifier, label_mapping, output_dir
+        )
+        metrics_df = {
+            "Enzyme": enzyme,
+            "Classifier": name_classifier,
+            "Epoch": epoch,
+            "Balanced Accuracy": balanced_acc,
+            "F1 Macro": f1_macro,
+            "F1 Micro": f1_micro,
+            "F1 Weighted": f1_weighted,
+            "AUC Score": auc_score,
+            "Log Loss": logloss,
+        }
 
     # Close the SummaryWriter
     writer.close()
@@ -152,16 +166,17 @@ def train_pytorch_classifier(
     plt.ylabel("Loss")
     plt.title("Training Loss Curve")
     plt.legend()
-    loss_curve_path = os.path.join(output_dir, f"loss_curve_{name}.png")
+    loss_curve_path = os.path.join(
+        output_dir, f"loss_curve_{name_classifier}_{enzyme}.png"
+    )
     plt.savefig(loss_curve_path)
     plt.close()
 
     # Save the trained model
-    model_path = os.path.join(output_dir, f"{name}_model.pth")
+    model_path = os.path.join(output_dir, f"{name_classifier}_model.pth")
     torch.save(model.state_dict(), model_path)
 
-
-    return f1_macro, balanced_acc, auc_score, logloss
+    return f1_macro, balanced_acc, auc_score, logloss, metrics_df
 
 
 def plot_balanced_accuracies(foldernameoutput, all_balanced_accuracies, enzyme):

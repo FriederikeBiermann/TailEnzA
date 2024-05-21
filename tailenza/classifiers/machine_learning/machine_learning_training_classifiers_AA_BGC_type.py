@@ -7,11 +7,14 @@ Created on Wed Feb 16 18:02:45 2022
 """
 
 import os
+import time
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
@@ -35,20 +38,87 @@ logging.basicConfig(
 )
 
 
-# Define the Simple Neural Network
-class SimpleNN(nn.Module):
+# FFNN Model 1: Basic Feedforward Neural Network
+class BasicFFNN(nn.Module):
     def __init__(self, in_features: int, num_classes: int):
-        super(SimpleNN, self).__init__()
+        super(BasicFFNN, self).__init__()
+        self.fc1 = nn.Linear(in_features, 64)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(64, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+# FFNN Model 2: Intermediate Feedforward Neural Network
+class IntermediateFFNN(nn.Module):
+    def __init__(self, in_features: int, num_classes: int):
+        super(IntermediateFFNN, self).__init__()
         self.fc1 = nn.Linear(in_features, 128)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(128, 64)
-        self.relu2 = nn.ReLU()
+        self.relu = nn.ReLU()
         self.fc3 = nn.Linear(64, num_classes)
 
     def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu2(self.fc2(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
         x = self.fc3(x)
+        return x
+
+
+# FFNN Model 3: Advanced Feedforward Neural Network
+class AdvancedFFNN(nn.Module):
+    def __init__(self, in_features: int, num_classes: int):
+        super(AdvancedFFNN, self).__init__()
+        self.fc1 = nn.Linear(in_features, 256)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(256, 128)
+        self.relu = nn.ReLU()
+        self.fc3 = nn.Linear(128, 64)
+        self.relu = nn.ReLU()
+        self.fc4 = nn.Linear(64, 32)
+        self.relu = nn.ReLU()
+        self.fc5 = nn.Linear(32, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = self.fc5(x)
+        return x
+
+
+class VeryAdvancedFFNN(nn.Module):
+    def __init__(self, in_features: int, num_classes: int):
+        super(VeryAdvancedFFNN, self).__init__()
+        self.fc1 = nn.Linear(in_features, 512)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(512, 256)
+        self.relu = nn.ReLU()
+        self.fc3 = nn.Linear(256, 128)
+        self.relu = nn.ReLU()
+        self.fc4 = nn.Linear(128, 64)
+        self.relu = nn.ReLU()
+        self.fc5 = nn.Linear(64, 32)
+        self.relu = nn.ReLU()
+        self.fc6 = nn.Linear(32, num_classes)
+
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc3(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        x = self.fc6(x)
         return x
 
 
@@ -189,15 +259,19 @@ class LSTM(nn.Module):
 
 # Update the list of classifier names and classifiers
 names_classifiers = [
-    "RNN",
-    "CNN",
-    "SimpleNN",
-    "LSTM",
+    # "RNN",
+    # "CNN",
+    # "SimpleNN",
+    # "LSTM",
+    "BasicFFNN",
+    "IntermediateFFNN",
+    "AdvancedFFNN",
+    "VeryAdvancedFFNN",
     "ExtraTreesClassifier",
-    "RandomForestClassifier",
-    "AdaBoostClassifier",
-    "DecisionTreeClassifier",
-    "MLPClassifier",
+    # "RandomForestClassifier",
+    # "AdaBoostClassifier",
+    # "DecisionTreeClassifier",
+    # "MLPClassifier",
 ]
 
 unique_count_target = (
@@ -212,12 +286,12 @@ classifiers = [
     None,
     None,
     ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    AdaBoostClassifier(n_estimators=100),
-    DecisionTreeClassifier(max_depth=5),
-    MLPClassifier(
-        solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
-    ),
+    # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    # AdaBoostClassifier(n_estimators=100),
+    # DecisionTreeClassifier(max_depth=5),
+    # MLPClassifier(
+    #     solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
+    # ),
 ]
 
 # Define max depth of decision tree and other hyperparameters
@@ -229,6 +303,7 @@ foldername_output = "../classifiers/Test_transformer/"
 
 
 def main():
+    all_metrics = []
     # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
         all_cross_validation_scores = {}
@@ -241,22 +316,32 @@ def main():
         unique_count_target = df["target"].nunique()
         num_fragments = len(enzymes[enzyme]["splitting_list"])
         models = [
-            RNN(
-                in_features=num_columns - 1,
-                hidden_size=20,
-                num_classes=unique_count_target,
-                num_fragments=num_fragments,
+            # RNN(
+            #     in_features=num_columns - 1,
+            #     hidden_size=20,
+            #     num_classes=unique_count_target,
+            #     num_fragments=num_fragments,
+            # ),
+            # CNN(
+            #     total_features=num_columns - 1,
+            #     num_fragments=num_fragments,
+            #     num_classes=unique_count_target,
+            # ),
+            # IntermediateFFNN(
+            #     num_classes=unique_count_target, in_features=num_columns - 1
+            # ),
+            # LSTM(
+            #     in_features=num_columns - 1,
+            #     hidden_size=20,
+            #     num_classes=unique_count_target,
+            # ),
+            BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            IntermediateFFNN(
+                num_classes=unique_count_target, in_features=num_columns - 1
             ),
-            CNN(
-                total_features=num_columns - 1,
-                num_fragments=num_fragments,
-                num_classes=unique_count_target,
-            ),
-            SimpleNN(num_classes=unique_count_target, in_features=num_columns - 1),
-            LSTM(
-                in_features=num_columns - 1,
-                hidden_size=20,
-                num_classes=unique_count_target,
+            AdvancedFFNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            VeryAdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns - 1
             ),
         ]
 
@@ -275,19 +360,22 @@ def main():
         for classifier, name_classifier in zip(classifiers, names_classifiers):
             if name_classifier in ["SimpleNN", "CNN", "RNN", "LSTM"]:
                 model, criterion, optimizer = classifier
-                f1_macro, balanced_acc, auc_score, logloss = train_pytorch_classifier(
-                    model,
-                    criterion,
-                    optimizer,
-                    x_train,
-                    y_train,
-                    x_test,
-                    y_test,
-                    name_classifier,
-                    enzyme,
-                    foldername_output,
-                    label_mapping,
+                f1_macro, balanced_acc, auc_score, logloss, metrics = (
+                    train_pytorch_classifier(
+                        model,
+                        criterion,
+                        optimizer,
+                        x_train,
+                        y_train,
+                        x_test,
+                        y_test,
+                        name_classifier,
+                        enzyme,
+                        foldername_output,
+                        label_mapping,
+                    )
                 )
+                all_metrics.append(metrics)
                 all_balanced_accuracies[name_classifier + "_" + enzyme] = balanced_acc
             else:
                 (
@@ -308,6 +396,12 @@ def main():
                 )
 
         plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
+    metrics_df = pd.concat(all_metrics, axis=0)
+    datetime = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    metrics_df.to_csv(
+        os.path.join(foldername_output, f"metrics_all_classifiers{datetime}.csv"),
+        index=False,
+    )
 
 
 if __name__ == "__main__":
