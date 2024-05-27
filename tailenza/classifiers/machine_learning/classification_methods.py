@@ -25,6 +25,9 @@ import logging
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 ros = RandomOverSampler(random_state=0)
 
 
@@ -43,6 +46,9 @@ def train_pytorch_classifier(
     epochs=50,
     cv=5,
 ):
+    # Move model to device
+    model.to(device)
+
     # Initialize SummaryWriter
     date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     log_dir = f"runs/{date_time}_lecun_{name_classifier}_{enzyme}"
@@ -66,8 +72,8 @@ def train_pytorch_classifier(
 
     model.train()
     dataset = TensorDataset(
-        torch.tensor(x_train_resampled.astype(np.float32)),
-        torch.tensor(y_train_resampled_encoded.astype(np.int64)),
+        torch.tensor(x_train_resampled.astype(np.float32)).to(device),
+        torch.tensor(y_train_resampled_encoded.astype(np.int64)).to(device),
     )
     loader = DataLoader(dataset, batch_size=10, shuffle=True)
 
@@ -76,6 +82,7 @@ def train_pytorch_classifier(
     for epoch in range(epochs):
         running_loss = 0.0
         for i, (inputs, targets) in enumerate(loader):
+            inputs, targets = inputs.to(device), targets.to(device)
             # create sample batch for model architecture logging
             if i == 0:
                 writer.add_graph(model, inputs)
@@ -100,16 +107,21 @@ def train_pytorch_classifier(
     # Evaluate the model
     model.eval()
     with torch.no_grad():
-        y_pred = model(torch.tensor(x_test.astype(np.float32))).argmax(dim=1).numpy()
+        y_pred = (
+            model(torch.tensor(x_test.astype(np.float32)).to(device))
+            .argmax(dim=1)
+            .cpu()
+            .numpy()
+        )
         f1_macro = f1_score(y_test_encoded, y_pred, average="macro")
         f1_micro = f1_score(y_test_encoded, y_pred, average="micro")
         f1_weighted = f1_score(y_test_encoded, y_pred, average="weighted")
         balanced_acc = balanced_accuracy_score(y_test_encoded, y_pred)
 
         # Generate probability outputs for ROC and log loss
-        outputs = model(torch.tensor(x_test.astype(np.float32)))
+        outputs = model(torch.tensor(x_test.astype(np.float32)).to(device))
         softmax = nn.Softmax(dim=1)
-        prob_outputs = softmax(outputs).numpy()
+        prob_outputs = softmax(outputs).cpu().numpy()
 
         # Handling different class scenarios for AUC
         lb = LabelBinarizer()

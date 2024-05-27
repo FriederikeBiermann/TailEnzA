@@ -32,10 +32,19 @@ from classification_methods import (
 )
 from tailenza.data.enzyme_information import BGC_types, enzymes
 import logging
+import argparse
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument("--mode", type=str, default="BGC")
+args = argparser.parse_args()
+MODE = args.mode
+
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # FFNN Model 1: Basic Feedforward Neural Network
@@ -296,9 +305,19 @@ classifiers = [
 # Define max depth of decision tree and other hyperparameters
 test_size = 0.5
 maxd = 15
-label_mapping = BGC_types
-directory_feature_matrices = "../preprocessing/preprocessed_data/dataset_transformer"
-foldername_output = "../classifiers/Test_transformer/"
+
+if MODE == "BGC":
+    label_mapping = BGC_types
+    directory_feature_matrices = (
+        "../preprocessing/preprocessed_data/dataset_transformer"
+    )
+    foldername_output = "../classifiers/Test_transformer/"
+if MODE == "metabolism":
+    label_mapping = ["primary_metabolism", "secondary_metabolism"]
+    directory_feature_matrices = (
+        "../preprocessing/preprocessed_data/dataset_transformer"
+    )
+    foldername_output = "../classifiers/Test_transformer_metabolism/"
 
 
 def main():
@@ -307,8 +326,9 @@ def main():
     for enzyme in enzymes:
         all_cross_validation_scores = {}
         all_balanced_accuracies = {}
+
         path_feature_matrix = os.path.join(
-            directory_feature_matrices, f"{enzyme}_BGC_type_feature_matrix.csv"
+            directory_feature_matrices, f"{enzyme}_{MODE}_type_feature_matrix.csv"
         )
         df = pd.read_csv(path_feature_matrix)
         num_columns = df.shape[1]
@@ -325,20 +345,24 @@ def main():
                 total_features=num_columns - 1,
                 num_fragments=num_fragments,
                 num_classes=unique_count_target,
-            ),
+            ).to(device),
             LSTM(
                 in_features=num_columns - 1,
                 hidden_size=20,
                 num_classes=unique_count_target,
+            ).to(device),
+            BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1).to(
+                device
             ),
-            BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1),
             IntermediateFFNN(
                 num_classes=unique_count_target, in_features=num_columns - 1
-            ),
-            AdvancedFFNN(num_classes=unique_count_target, in_features=num_columns - 1),
+            ).to(device),
+            AdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns - 1
+            ).to(device),
             VeryAdvancedFFNN(
                 num_classes=unique_count_target, in_features=num_columns - 1
-            ),
+            ).to(device),
         ]
 
         criteria = [nn.CrossEntropyLoss() for _ in range(len(models))]
@@ -348,13 +372,28 @@ def main():
             path_feature_matrix, test_size
         )
 
+        # Move data to device
+        x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
+        x_test = torch.tensor(x_test, dtype=torch.float32).to(device)
+        y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+        y_test = torch.tensor(y_test, dtype=torch.long).to(device)
+
         classifiers[0:4] = [
             (model, criterion, optimizer)
             for model, criterion, optimizer in zip(models, criteria, optimizers)
         ]
 
         for classifier, name_classifier in zip(classifiers, names_classifiers):
-            if name_classifier in ["SimpleNN", "CNN", "RNN", "LSTM"]:
+            if name_classifier in [
+                "SimpleNN",
+                "CNN",
+                "RNN",
+                "LSTM",
+                "BasicFFNN",
+                "IntermediateFFNN",
+                "AdvancedFFNN",
+                "VeryAdvancedFFNN",
+            ]:
                 model, criterion, optimizer = classifier
                 f1_macro, balanced_acc, auc_score, logloss, metrics = (
                     train_pytorch_classifier(
@@ -383,12 +422,12 @@ def main():
                     enzyme,
                     x_data,
                     y_data,
-                    x_train,
-                    y_train,
-                    x_test,
-                    y_test,
+                    x_train.cpu().numpy(),
+                    y_train.cpu().numpy(),
+                    x_test.cpu().numpy(),
+                    y_test.cpu().numpy(),
                     foldername_output,
-                    BGC_types,
+                    label_mapping,
                 )
 
         plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
