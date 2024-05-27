@@ -260,9 +260,8 @@ class LSTM(nn.Module):
 # Update the list of classifier names and classifiers
 names_classifiers = [
     # "RNN",
-    # "CNN",
-    # "SimpleNN",
-    # "LSTM",
+    "CNN",
+    "LSTM",
     "BasicFFNN",
     "IntermediateFFNN",
     "AdvancedFFNN",
@@ -322,19 +321,16 @@ def main():
             #     num_classes=unique_count_target,
             #     num_fragments=num_fragments,
             # ),
-            # CNN(
-            #     total_features=num_columns - 1,
-            #     num_fragments=num_fragments,
-            #     num_classes=unique_count_target,
-            # ),
-            # IntermediateFFNN(
-            #     num_classes=unique_count_target, in_features=num_columns - 1
-            # ),
-            # LSTM(
-            #     in_features=num_columns - 1,
-            #     hidden_size=20,
-            #     num_classes=unique_count_target,
-            # ),
+            CNN(
+                total_features=num_columns - 1,
+                num_fragments=num_fragments,
+                num_classes=unique_count_target,
+            ),
+            LSTM(
+                in_features=num_columns - 1,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            ),
             BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1),
             IntermediateFFNN(
                 num_classes=unique_count_target, in_features=num_columns - 1
@@ -397,9 +393,9 @@ def main():
 
         plot_balanced_accuracies(foldername_output, all_balanced_accuracies, enzyme)
     metrics_df = pd.concat(all_metrics, axis=0)
-    datetime = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     metrics_df.to_csv(
-        os.path.join(foldername_output, f"metrics_all_classifiers{datetime}.csv"),
+        os.path.join(foldername_output, f"metrics_all_classifiers{date_time}.csv"),
         index=False,
     )
 

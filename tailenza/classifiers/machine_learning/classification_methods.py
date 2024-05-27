@@ -3,6 +3,7 @@ from torch import nn
 from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.model_selection import cross_val_score, train_test_split, StratifiedKFold
 from imblearn.over_sampling import RandomOverSampler
+from datetime import datetime
 from torch.optim import Optimizer
 from torch.utils.tensorboard import SummaryWriter
 import pickle
@@ -43,7 +44,9 @@ def train_pytorch_classifier(
     cv=5,
 ):
     # Initialize SummaryWriter
-    writer = SummaryWriter()
+    date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    log_dir = f"runs/{date_time}_lecun_{name_classifier}_{enzyme}"
+    writer = SummaryWriter(log_dir=log_dir)
     logging.info(f"Processing model {name_classifier}")
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, f"{enzyme}_{name_classifier}")
@@ -73,6 +76,9 @@ def train_pytorch_classifier(
     for epoch in range(epochs):
         running_loss = 0.0
         for i, (inputs, targets) in enumerate(loader):
+            # create sample batch for model architecture logging
+            if i == 0:
+                writer.add_graph(model, inputs)
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
