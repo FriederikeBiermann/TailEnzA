@@ -284,7 +284,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
                 fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:, 0]))
                 break
     fragment_matrix = remove_incomplete_rows(fragment_matrix)
-    fragment_matrix = trim_fragment_matrix(fragment_matrix, splitting_list)
+    # fragment_matrix = trim_fragment_matrix(fragment_matrix, splitting_list)
 
     fragment_matrix["Concatenated"] = (
         fragment_matrix.fillna("").astype(str).apply("".join, axis=1)
@@ -292,26 +292,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
     return fragment_matrix
 
 
-def generate_transformer_embeddings(
-    sequence_labels, sequence_strs, batch_converter, model
-):
-    """
-    Generate transformer embeddings for a list of sequences.
-    """
-    batch_labels, batch_strs, batch_tokens = batch_converter(
-        [(sequence_labels, sequence_strs)]
-    )
-
-    with torch.no_grad():
-        results = model(batch_tokens, repr_layers=[33])
-        token_embeddings = results["representations"][33]
-
-    # Average embeddings across the sequence length for a single vector representation
-    averaged_embeddings = token_embeddings.mean(dim=1)
-    return averaged_embeddings
-
-
-def fragment_means(embeddings, lengths):
+def fragment_means(embeddings, lengths) -> list:
     fragment_results = []
     for embedding, length_row in zip(embeddings, lengths.itertuples(index=False)):
         start = 0
@@ -358,7 +339,7 @@ def convert_embeddings_to_dataframe(embeddings, index, fragments):
     # Flatten each tensor and convert to numpy
     logging.debug(f"Embeddings shape: {len(embeddings)}")
     logging.debug(f"Embedding shape: {embeddings[0].shape}")
-    data = [tensor.numpy() for tensor in embeddings]
+    data = [tensor.numpy().cpu() for tensor in embeddings]
     logging.debug(f"Data shape: {data[0].shape}")
     # Check total number of features
     total_features = data[0].shape[0]
@@ -393,6 +374,7 @@ def featurize_fragments(
     batch_converter,
     model,
     include_charge_features: bool = True,
+    device: str = "cpu",
 ):
     """
     Generate features for each fragment in the fragments dictionary.
@@ -416,6 +398,7 @@ def featurize_fragments(
     # Generate embeddings
     logging.debug("Generating embeddings")
     _, _, batch_tokens = batch_converter(list(zip(sequence_labels, sequence_strs)))
+    batch_tokens = batch_tokens.to(device)
     with torch.no_grad():
         results = model(batch_tokens, repr_layers=[33])
         logging.debug(f"Results: {results.keys()}")

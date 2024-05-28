@@ -25,6 +25,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
@@ -110,6 +111,8 @@ def process_datasets(
     - None: The function saves the complete feature matrix to a CSV file and prints the path to this file.
     """
     complete_feature_matrix = pd.DataFrame()
+    # Move model to GPU
+    model.to(device)
 
     for enzyme in enzymes:
         filenames_dict = create_filenames(enzyme, BGC_types, foldername_training_sets)
@@ -134,7 +137,11 @@ def process_datasets(
                 logging.debug("Fragment matrix created for %s", enzyme)
                 logging.debug(fragment_matrix)
                 feature_matrix = featurize_fragments(
-                    fragment_matrix, batch_converter, model, include_charge_features
+                    fragment_matrix,
+                    batch_converter,
+                    model,
+                    include_charge_features,
+                    device,
                 )
                 logging.debug("Feature matrix created for %s", enzyme)
                 feature_matrix["target"] = BGC_type
@@ -153,7 +160,6 @@ if __name__ == "__main__":
     # Load the ESM-1b model
 
     file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
-    print(file_path_model)
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
     model = model.eval()
     batch_converter = alphabet.get_batch_converter()
