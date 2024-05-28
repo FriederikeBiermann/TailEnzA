@@ -17,6 +17,31 @@ import pandas as pd
 from pathlib import Path
 import torch
 
+def print_gpu_memory():
+    device = torch.device("cuda")
+    logging.info("GPU memory stats:")
+    # Get GPU properties
+    props = torch.cuda.get_device_properties(device)
+    
+    # Total memory in bytes
+    total_memory = props.total_memory
+
+    # Allocated memory in bytes
+    allocated_memory = torch.cuda.memory_allocated(device)
+
+    # Available memory in bytes
+    available_memory = total_memory - allocated_memory
+
+    # Convert to GiB for readability
+    total_memory_gib = total_memory / (1024 ** 3)
+    available_memory_gib = available_memory / (1024 ** 3)
+
+    print(f"Total GPU Memory: {total_memory_gib:.2f} GiB")
+    print(f"Available GPU Memory: {available_memory_gib:.2f} GiB")
+    for i in range(torch.cuda.device_count()):
+        device = torch.device(f"cuda:{i}")
+        stats = torch.cuda.memory_stats(device)
+        logging.debug(f"{stats}")
 
 def filter_alignment(alignment, min_length, max_length):
     # filter the alignment based on the length of the sequences
@@ -294,6 +319,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
 
 def fragment_means(embeddings, lengths) -> list:
     fragment_results = []
+    print_gpu_memory()
     for embedding, length_row in zip(embeddings, lengths.itertuples(index=False)):
         start = 0
         means = []
@@ -329,6 +355,7 @@ def fragment_means(embeddings, lengths) -> list:
         fragment_results.append(torch.stack(means))
     logging.debug(f"Fragment results shape: {fragment_results[0].shape}")
     logging.debug(f"Fragment results length: {len(fragment_results)}")
+    print_gpu_memory()
     return fragment_results
 
 
@@ -339,7 +366,7 @@ def convert_embeddings_to_dataframe(embeddings, index, fragments):
     # Flatten each tensor and convert to numpy
     logging.debug(f"Embeddings shape: {len(embeddings)}")
     logging.debug(f"Embedding shape: {embeddings[0].shape}")
-    data = [tensor.numpy().cpu() for tensor in embeddings]
+    data = [tensor.cpu().numpy() for tensor in embeddings]
     logging.debug(f"Data shape: {data[0].shape}")
     # Check total number of features
     total_features = data[0].shape[0]
@@ -398,13 +425,31 @@ def featurize_fragments(
     # Generate embeddings
     logging.debug("Generating embeddings")
     _, _, batch_tokens = batch_converter(list(zip(sequence_labels, sequence_strs)))
+    #print_gpu_memory()
     batch_tokens = batch_tokens.to(device)
+    #print_gpu_memory()
+    # Split the batch into two halves
+    mid = batch_tokens.size(0) // 2
+    first_batch_tokens = batch_tokens[:mid]
+    second_batch_tokens = batch_tokens[mid:]
+    
+    # Process embeddings for the first half batch
     with torch.no_grad():
-        results = model(batch_tokens, repr_layers=[33])
-        logging.debug(f"Results: {results.keys()}")
-        token_embeddings = results["representations"][33]
-    logging.debug(f"Token embeddings shape: {token_embeddings.shape}")
-    # Process embeddings
+        results_first = model(first_batch_tokens, repr_layers=[33])
+        #print_gpu_memory()
+        logging.debug(f"Results: {results_first.keys()}")
+        token_embeddings_first = results_first["representations"][33]
+    
+    # Process embeddings for the second half batch
+    with torch.no_grad():
+        results_second = model(second_batch_tokens, repr_layers=[33])
+        #print_gpu_memory()
+        logging.debug(f"Results: {results_second.keys()}")
+        token_embeddings_second = results_second["representations"][33]
+
+    # Concatenate the embeddings
+    token_embeddings = torch.cat([token_embeddings_first, token_embeddings_second], dim=0)
+    
     # Select columns excluding 'Concatenated'
     columns_to_process = fragment_matrix.columns.difference(["Concatenated"])
 

@@ -29,8 +29,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
-foldername_training_sets = "training_data/realigned_fastas_old"
-foldername_output = "preprocessed_data/dataset_transformer"
+foldername_training_sets = "training_data/aligned_fastas_without_super_long_or_short_without_divergent"
+foldername_output = "preprocessed_data/dataset_transformer_without_divergent"
 
 # For debugging
 if DEBUGGING:
@@ -118,8 +118,8 @@ def process_datasets(
         filenames_dict = create_filenames(enzyme, BGC_types, foldername_training_sets)
         logging.debug("Filenames dictionary created for %s", enzyme)
         logging.debug(filenames_dict)
-
         for BGC_type, datasets in filenames_dict.items():
+            
             for dataset in datasets:
                 logging.debug("Processing dataset: %s", dataset)
                 msa_path = Path(dataset)
@@ -150,7 +150,7 @@ def process_datasets(
                 )
 
         output_path = Path(
-            foldername_output, f"{enzyme}_metabolism_type_feature_matrix.csv"
+            foldername_output, f"BGC_type_feature_matrix.csv"
         )
         complete_feature_matrix.to_csv(output_path, index=False)
         logging.info("Feature matrix saved to %s", output_path)
