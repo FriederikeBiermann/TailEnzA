@@ -36,8 +36,6 @@ def print_gpu_memory():
     total_memory_gib = total_memory / (1024 ** 3)
     available_memory_gib = available_memory / (1024 ** 3)
 
-    print(f"Total GPU Memory: {total_memory_gib:.2f} GiB")
-    print(f"Available GPU Memory: {available_memory_gib:.2f} GiB")
     for i in range(torch.cuda.device_count()):
         device = torch.device(f"cuda:{i}")
         stats = torch.cuda.memory_stats(device)
@@ -293,6 +291,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
     else:
         for record in alignment:
             if record.id == "Reference":
+                print("§")
                 logging.debug("Reference sequence found")
                 index_reference = indexing_reference(record)
                 logging.debug("Indexing reference sequence", index_reference)
@@ -411,6 +410,8 @@ def featurize_fragments(
     sequence_strs = (
         fragment_matrix["Concatenated"].dropna().tolist()
     )  # Ensure to drop any NaN values
+    if not sequence_strs:
+        return None
     logging.debug(f"Processing {len(sequence_strs)} sequences ")
     logging.debug(f"Longest sequence: {max(len(s) for s in sequence_strs)}")
     sequence_labels = fragment_matrix.index.tolist()
@@ -425,9 +426,7 @@ def featurize_fragments(
     # Generate embeddings
     logging.debug("Generating embeddings")
     _, _, batch_tokens = batch_converter(list(zip(sequence_labels, sequence_strs)))
-    #print_gpu_memory()
     batch_tokens = batch_tokens.to(device)
-    #print_gpu_memory()
     # Split the batch into two halves
     mid = batch_tokens.size(0) // 2
     first_batch_tokens = batch_tokens[:mid]
@@ -436,14 +435,12 @@ def featurize_fragments(
     # Process embeddings for the first half batch
     with torch.no_grad():
         results_first = model(first_batch_tokens, repr_layers=[33])
-        #print_gpu_memory()
         logging.debug(f"Results: {results_first.keys()}")
         token_embeddings_first = results_first["representations"][33]
     
     # Process embeddings for the second half batch
     with torch.no_grad():
         results_second = model(second_batch_tokens, repr_layers=[33])
-        #print_gpu_memory()
         logging.debug(f"Results: {results_second.keys()}")
         token_embeddings_second = results_second["representations"][33]
 

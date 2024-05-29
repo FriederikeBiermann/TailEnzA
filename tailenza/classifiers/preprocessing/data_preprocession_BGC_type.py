@@ -22,7 +22,7 @@ FASTAS_ALIGNED_BEFORE = True
 INCLUDE_CHARGE_FEATURES = True
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -131,9 +131,11 @@ def process_datasets(
                 min_length = enzymes[enzyme]["min_length"]
                 max_length = enzymes[enzyme]["max_length"]
                 alignment = filter_alignment(alignment, min_length, max_length)
+                logging.debug(alignment)
                 fragment_matrix = fragment_alignment(
                     alignment, splitting_list, FASTAS_ALIGNED_BEFORE
                 )
+                logging.debug(fragment_matrix)
                 logging.debug("Fragment matrix created for %s", enzyme)
                 logging.debug(fragment_matrix)
                 feature_matrix = featurize_fragments(
@@ -143,6 +145,9 @@ def process_datasets(
                     include_charge_features,
                     device,
                 )
+                if feature_matrix is None:
+                    logging.info(f"Removed all sequences in {dataset}")
+                    continue
                 logging.debug("Feature matrix created for %s", enzyme)
                 feature_matrix["target"] = BGC_type
                 complete_feature_matrix = pd.concat(
