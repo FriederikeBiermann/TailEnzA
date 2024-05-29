@@ -269,17 +269,18 @@ class LSTM(nn.Module):
 # Update the list of classifier names and classifiers
 names_classifiers = [
     # "RNN",
+    "ExtraTreesClassifier"
     "CNN",
     "LSTM",
     "BasicFFNN",
     "IntermediateFFNN",
     "AdvancedFFNN",
     "VeryAdvancedFFNN",
-    "ExtraTreesClassifier",
-    # "RandomForestClassifier",
-    # "AdaBoostClassifier",
-    # "DecisionTreeClassifier",
-    # "MLPClassifier",
+    ,
+    "RandomForestClassifier",
+    "AdaBoostClassifier",
+    "DecisionTreeClassifier",
+    "MLPClassifier",
 ]
 
 unique_count_target = (
@@ -289,17 +290,18 @@ num_columns = 20  # Replace with the actual number of columns in your dataset
 
 # None as placeholders for specific classifiers in pytorch
 classifiers = [
-    None,
-    None,
-    None,
-    None,
     ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
-    # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    # AdaBoostClassifier(n_estimators=100),
-    # DecisionTreeClassifier(max_depth=5),
-    # MLPClassifier(
-    #     solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
-    # ),
+    None,
+    None,
+    None,
+    None,
+
+    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    AdaBoostClassifier(n_estimators=100),
+    DecisionTreeClassifier(max_depth=5),
+    MLPClassifier(
+        solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
+    ),
 ]
 
 # Define max depth of decision tree and other hyperparameters
@@ -378,7 +380,7 @@ def main():
         y_train = torch.tensor(y_train, dtype=torch.long).to(device)
         y_test = torch.tensor(y_test, dtype=torch.long).to(device)
 
-        classifiers[0:4] = [
+        classifiers[1:5] = [
             (model, criterion, optimizer)
             for model, criterion, optimizer in zip(models, criteria, optimizers)
         ]
