@@ -269,14 +269,13 @@ class LSTM(nn.Module):
 # Update the list of classifier names and classifiers
 names_classifiers = [
     # "RNN",
-    "ExtraTreesClassifier"
-    "CNN",
-    "LSTM",
+    "ExtraTreesClassifier",
+    #"CNN",
+    #"LSTM",
     "BasicFFNN",
     "IntermediateFFNN",
     "AdvancedFFNN",
     "VeryAdvancedFFNN",
-    ,
     "RandomForestClassifier",
     "AdaBoostClassifier",
     "DecisionTreeClassifier",
@@ -343,16 +342,17 @@ def main():
             #     num_classes=unique_count_target,
             #     num_fragments=num_fragments,
             # ),
-            CNN(
-                total_features=num_columns - 1,
-                num_fragments=num_fragments,
-                num_classes=unique_count_target,
-            ).to(device),
-            LSTM(
-                in_features=num_columns - 1,
-                hidden_size=20,
-                num_classes=unique_count_target,
-            ).to(device),
+           
+            #CNN(
+            #    total_features=num_columns - 1,
+            #    num_fragments=num_fragments,
+            #    num_classes=unique_count_target,
+            #).to(device),
+            #LSTM(
+            #    in_features=num_columns - 1,
+            #    hidden_size=20,
+            #    num_classes=unique_count_target,
+            #).to(device),
             BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1).to(
                 device
             ),
@@ -375,10 +375,10 @@ def main():
         )
 
         # Move data to device
-        x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
-        x_test = torch.tensor(x_test, dtype=torch.float32).to(device)
-        y_train = torch.tensor(y_train, dtype=torch.long).to(device)
-        y_test = torch.tensor(y_test, dtype=torch.long).to(device)
+        #x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
+        #x_test = torch.tensor(x_test, dtype=torch.float32).to(device)
+        #y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+        #y_test = torch.tensor(y_test, dtype=torch.long).to(device)
 
         classifiers[1:5] = [
             (model, criterion, optimizer)
@@ -424,10 +424,10 @@ def main():
                     enzyme,
                     x_data,
                     y_data,
-                    x_train.cpu().numpy(),
-                    y_train.cpu().numpy(),
-                    x_test.cpu().numpy(),
-                    y_test.cpu().numpy(),
+                    x_train,
+                    y_train,
+                    x_test,
+                    y_test,
                     foldername_output,
                     label_mapping,
                 )

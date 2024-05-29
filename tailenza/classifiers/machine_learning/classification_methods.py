@@ -57,10 +57,11 @@ def train_pytorch_classifier(
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, f"{enzyme}_{name_classifier}")
     os.makedirs(output_dir, exist_ok=True)
-    x_train = x_train.to_numpy()
-    y_train = y_train.to_numpy()
-    x_test = x_test.to_numpy()
-    y_test = y_test.to_numpy()
+    if not isinstance(x_train, np.ndarray):
+        x_train = x_train.to_numpy()
+        y_train = y_train.to_numpy()
+        x_test = x_test.to_numpy()
+        y_test = y_test.to_numpy()
     # Apply RandomOverSampler
     x_train_resampled, y_train_resampled = ros.fit_resample(x_train, y_train)
 
@@ -151,16 +152,9 @@ def train_pytorch_classifier(
         logging.info(f"AUC Score: {auc_score}")
         logging.info(f"Log Loss: {logloss}")
 
-        # Plot and save confusion matrix
-        cm = confusion_matrix(y_test_encoded, y_pred)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-        disp.plot()
-        plt.title("Confusion Matrix")
-        confusion_matrix_path = os.path.join(
-            output_dir, f"confusion_matrix_{name_classifier}_{enzyme}.png"
-        )
+        y_pred_decoded = label_encoder.inverse_transform(y_pred)
         plot_confusion_matrix(
-            y_test_encoded, y_pred, enzyme, name_classifier, label_mapping, output_dir
+            y_test, y_pred_decoded, enzyme, name_classifier, label_mapping, output_dir
         )
         metrics_df = {
             "Enzyme": enzyme,
@@ -274,8 +268,8 @@ def create_training_test_set(path_feature_matrix, test_size):
     feature_matrix = pd.read_csv(path_feature_matrix)
     feature_matrix = feature_matrix.sample(frac=1)
     # define target and features
-    x_data = feature_matrix.loc[:, feature_matrix.columns != "target"]
-    y_data = feature_matrix["target"]
+    x_data = feature_matrix.loc[:, feature_matrix.columns != "target"].to_numpy()
+    y_data = feature_matrix["target"].to_numpy()
     # split into training and test set
     x_train, x_test, y_train, y_test = train_test_split(
         x_data, y_data, test_size=test_size, shuffle=True
@@ -454,3 +448,4 @@ def optimize_depth_classifier(
     )
     plt.show()
     return bestmaximum_depth
+
