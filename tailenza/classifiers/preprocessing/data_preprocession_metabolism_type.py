@@ -25,11 +25,13 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
+device = torch.device(
+    "cuda:1" if torch.cuda.is_available() else "cpu"
+)  # run on second GPU
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
-foldername_training_sets = "training_data/Toy_dataset"
-foldername_output = "preprocessed_data/Toy_dataset_transformer"
+foldername_training_sets = "training_data/ncbi_dataset_16_05_2024_without_divergent"
+foldername_output = "preprocessed_data/dataset_transformer_without_divergent"
 
 # For debugging
 if DEBUGGING:
@@ -116,7 +118,7 @@ def process_datasets(
     - None: The function saves the complete feature matrix to a CSV file and prints the path to this file.
     """
     complete_feature_matrix = pd.DataFrame()
-
+    model.to(device)
     for enzyme in enzymes:
         filenames_dict = create_filenames(enzyme, BGC_types, foldername_training_sets)
         logging.debug("Filenames dictionary created for %s", enzyme)
@@ -144,7 +146,11 @@ def process_datasets(
                 logging.debug("Fragment matrix created for %s", enzyme)
                 logging.debug(fragment_matrix)
                 feature_matrix = featurize_fragments(
-                    fragment_matrix, batch_converter, model, include_charge_features
+                    fragment_matrix,
+                    batch_converter,
+                    model,
+                    include_charge_features,
+                    device,
                 )
                 logging.debug("Feature matrix created for %s", enzyme)
                 if BGC_type in BGC_types:
@@ -169,7 +175,6 @@ if __name__ == "__main__":
     # Load the ESM-1b model
 
     file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
-    print(file_path_model)
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
     model = model.eval()
     batch_converter = alphabet.get_batch_converter()
