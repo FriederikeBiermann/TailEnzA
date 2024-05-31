@@ -40,11 +40,13 @@ logging.basicConfig(
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("--mode", type=str, default="BGC")
+argparser.add_argument("--device", type=str, default="cuda")
+
 args = argparser.parse_args()
 MODE = args.mode
 
 # Check if GPU is available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
 
 # FFNN Model 1: Basic Feedforward Neural Network
@@ -58,6 +60,7 @@ class BasicFFNN(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
+        x = F.softmax(x, dim=1)
         return x
 
 
@@ -75,6 +78,7 @@ class IntermediateFFNN(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
+        x = F.softmax(x, dim=1)
         return x
 
 
@@ -98,6 +102,7 @@ class AdvancedFFNN(nn.Module):
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
         x = self.fc5(x)
+        x = F.softmax(x, dim=1)
         return x
 
 
@@ -128,6 +133,7 @@ class VeryAdvancedFFNN(nn.Module):
         x = F.relu(self.fc4(x))
         x = F.relu(self.fc5(x))
         x = self.fc6(x)
+        x = F.softmax(x, dim=1)
         return x
 
 
@@ -190,7 +196,7 @@ class CNN(nn.Module):
         x = x.view(batch_size, -1)
         x = self.relu(self.fc1(x))
         x = self.fc2(x)
-
+        x = F.softmax(x, dim=1)
         return x
 
 
@@ -240,6 +246,7 @@ class RNN(nn.Module):
         out, _ = self.rnn(x, h0)
         out = out[:, -1, :]
         out = self.fc(out)
+        x = F.softmax(x, dim=1)
         return out
 
 
@@ -263,6 +270,7 @@ class LSTM(nn.Module):
         out, _ = self.lstm(x, (h0, c0))
         out = out[:, -1, :]
         out = self.fc(out)
+        out = F.softmax(out, dim=1)
         return out
 
 
@@ -270,8 +278,8 @@ class LSTM(nn.Module):
 names_classifiers = [
     # "RNN",
     "ExtraTreesClassifier",
-    #"CNN",
-    #"LSTM",
+    "CNN",
+    "LSTM",
     "BasicFFNN",
     "IntermediateFFNN",
     "AdvancedFFNN",
@@ -289,15 +297,17 @@ num_columns = 20  # Replace with the actual number of columns in your dataset
 
 # None as placeholders for specific classifiers in pytorch
 classifiers = [
-    ExtraTreesClassifier(max_depth=15, min_samples_leaf=1, class_weight="balanced"),
+    ExtraTreesClassifier(max_depth=25, min_samples_leaf=1, class_weight="balanced"),
+    None,
+    None,
     None,
     None,
     None,
     None,
 
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    RandomForestClassifier(max_depth=25, n_estimators=10, max_features=1),
     AdaBoostClassifier(n_estimators=100),
-    DecisionTreeClassifier(max_depth=5),
+    DecisionTreeClassifier(max_depth=25),
     MLPClassifier(
         solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
     ),
@@ -312,13 +322,15 @@ if MODE == "BGC":
     directory_feature_matrices = (
         "../preprocessing/preprocessed_data/dataset_transformer"
     )
-    foldername_output = "../classifiers/Test_transformer/"
-if MODE == "metabolism":
+    foldername_output = "../classifiers/Test_transformer_BGC_type/"
+elif MODE == "metabolism":
     label_mapping = ["primary_metabolism", "secondary_metabolism"]
     directory_feature_matrices = (
         "../preprocessing/preprocessed_data/dataset_transformer"
     )
     foldername_output = "../classifiers/Test_transformer_metabolism/"
+else:
+    raise ValueError (f"MODE must be BGC or metabolism, not {MODE}")
 
 
 def main():
@@ -343,16 +355,16 @@ def main():
             #     num_fragments=num_fragments,
             # ),
            
-            #CNN(
-            #    total_features=num_columns - 1,
-            #    num_fragments=num_fragments,
-            #    num_classes=unique_count_target,
-            #).to(device),
-            #LSTM(
-            #    in_features=num_columns - 1,
-            #    hidden_size=20,
-            #    num_classes=unique_count_target,
-            #).to(device),
+            CNN(
+                total_features=num_columns - 1,
+                num_fragments=num_fragments,
+                num_classes=unique_count_target,
+            ).to(device),
+            LSTM(
+                in_features=num_columns - 1,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            ).to(device),
             BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1).to(
                 device
             ),
@@ -374,11 +386,6 @@ def main():
             path_feature_matrix, test_size
         )
 
-        # Move data to device
-        #x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
-        #x_test = torch.tensor(x_test, dtype=torch.float32).to(device)
-        #y_train = torch.tensor(y_train, dtype=torch.long).to(device)
-        #y_test = torch.tensor(y_test, dtype=torch.long).to(device)
 
         classifiers[1:5] = [
             (model, criterion, optimizer)
