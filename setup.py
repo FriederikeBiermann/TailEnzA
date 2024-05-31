@@ -24,7 +24,9 @@ def download_file(url, filename):
 # Define the filenames and their URLs
 files = {
     "tailenza/data/esm1b_t33_650M_UR50S.pt": "https://dl.fbaipublicfiles.com/fair-esm/models/esm1b_t33_650M_UR50S.pt",
-    "tailenza/data/esm1b_t33_650M_UR50S-contact-regression.pt": "https://dl.fbaipublicfiles.com/fair-esm/regression/esm1b_t33_650M_UR50S-contact-regression.pt"
+    "tailenza/data/esm1b_t33_650M_UR50S-contact-regression.pt": "https://dl.fbaipublicfiles.com/fair-esm/regression/esm1b_t33_650M_UR50S-contact-regression.pt",
+    "tailenza/data/esm2_t36_3B_UR50D.pt": "https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t36_3B_UR50D.pt",
+    "tailenza/data/esm1b_t33_650M_UR50S-contact-regression.pt": "https://dl.fbaipublicfiles.com/fair-esm/regression/esm2_t36_3B_UR50D-contact-regression.pt"
 }
 
 # Check each file and download if not present
