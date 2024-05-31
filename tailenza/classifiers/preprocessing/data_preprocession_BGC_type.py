@@ -155,7 +155,7 @@ def process_datasets(
                 )
 
         output_path = Path(
-            foldername_output, f"BGC_type_feature_matrix.csv"
+            foldername_output, f"{enzyme}_BGC_type_feature_matrix.csv"
         )
         complete_feature_matrix.to_csv(output_path, index=False)
         logging.info("Feature matrix saved to %s", output_path)
