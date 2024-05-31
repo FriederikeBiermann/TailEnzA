@@ -174,7 +174,7 @@ def process_datasets(
 if __name__ == "__main__":
     # Load the ESM-1b model
 
-    file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
+    file_path_model = package_dir.joinpath("data", "esm2_t36_3B_UR50D.pt")
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
     model = model.eval()
     batch_converter = alphabet.get_batch_converter()

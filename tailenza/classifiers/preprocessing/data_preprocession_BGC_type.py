@@ -29,7 +29,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
-foldername_training_sets = "training_data/aligned_fastas_without_super_long_or_short_without_divergent"
+foldername_training_sets = (
+    "training_data/aligned_fastas_without_super_long_or_short_without_divergent"
+)
 foldername_output = "preprocessed_data/dataset_transformer_without_divergent"
 
 # For debugging
@@ -119,7 +121,7 @@ def process_datasets(
         logging.debug("Filenames dictionary created for %s", enzyme)
         logging.debug(filenames_dict)
         for BGC_type, datasets in filenames_dict.items():
-            
+
             for dataset in datasets:
                 logging.debug("Processing dataset: %s", dataset)
                 msa_path = Path(dataset)
@@ -164,7 +166,7 @@ def process_datasets(
 if __name__ == "__main__":
     # Load the ESM-1b model
 
-    file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
+    file_path_model = package_dir.joinpath("data", "esm2_t36_3B_UR50D.pt")
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
     model = model.eval()
     batch_converter = alphabet.get_batch_converter()
