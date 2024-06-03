@@ -23,6 +23,10 @@ from tailenza.classifiers.preprocessing.feature_generation import (
 import logging
 from importlib.resources import files
 import esm
+import torch
+import torch.nn.functional as F
+from sklearn.base import BaseEstimator
+from torch import nn
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", BiopythonWarning)
@@ -36,6 +40,8 @@ warnings.filterwarnings("ignore", category=UserWarning, module="numpy.core.getli
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # create a parser object
 parser = argparse.ArgumentParser(
     description="TailEnzA extracts Genbank files which contain potential novel RiPP biosynthesis gene clusters."
@@ -307,15 +313,30 @@ def save_enzymes_to_fasta(record_dict):
 
 def classifier_prediction(feature_matrix, classifier_path):
     """Predict values using a classifier"""
-    classifier = pickle.load(open(classifier_path, "rb"))
-    predicted_values = classifier.predict(feature_matrix)
-    score_predicted_values = classifier.predict_proba(feature_matrix)
+    with open(classifier_path, "rb") as file:
+        classifier = pickle.load(file)
+
+    if isinstance(
+        classifier, BaseEstimator
+    ):  # Check if the classifier is a scikit-learn model
+        predicted_values = classifier.predict(feature_matrix)
+        score_predicted_values = classifier.predict_proba(feature_matrix)
+    elif isinstance(
+        classifier, nn.Module
+    ):  # Check if the classifier is a PyTorch model
+        classifier.eval()  # Set the model to evaluation mode
+        classifier.to(device)
+        with torch.no_grad():
+            feature_matrix = torch.tensor(
+                feature_matrix.to_numpy(), dtype=torch.float32
+            ).to(device)
+            logits = classifier(feature_matrix)
+            predicted_values = torch.argmax(logits, dim=1).cpu().numpy()
+            score_predicted_values = F.softmax(logits, dim=1).cpu().numpy()
+    else:
+        raise ValueError("Unsupported classifier type")
+
     return predicted_values, score_predicted_values
-
-
-from Bio.SeqFeature import SeqFeature, FeatureLocation
-from Bio import SeqIO
-import os
 
 
 def calculate_score(filtered_dataframe, target_BGC_type):
@@ -511,10 +532,7 @@ def main():
         }
         feature_matrixes = {
             key: featurize_fragments(
-                fragment_matrix,
-                batch_converter,
-                model,
-                include_charge_features,
+                fragment_matrix, batch_converter, model, include_charge_features, device
             )
             for key, fragment_matrix in fragment_matrixes.items()
         }
