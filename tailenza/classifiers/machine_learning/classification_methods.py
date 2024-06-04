@@ -43,7 +43,7 @@ def train_pytorch_classifier(
     enzyme,
     output_dir,
     label_mapping,
-    epochs=50,
+    epochs=100,
     cv=5,
 ):
     # Move model to device
@@ -264,19 +264,22 @@ def plot_confusion_matrix(
 
 
 def create_training_test_set(path_feature_matrix, test_size):
-    # create training and test set from feature matrix
-    feature_matrix = pd.read_csv(path_feature_matrix)
-    feature_matrix = feature_matrix.sample(frac=1)
-    # define target and features
-    x_data = feature_matrix.loc[:, feature_matrix.columns != "target"].to_numpy()
-    y_data = feature_matrix["target"].to_numpy()
-    # split into training and test set
-    x_train, x_test, y_train, y_test = train_test_split(
-        x_data, y_data, test_size=test_size, shuffle=True
-    )
-    # resample to balance
-    x_train, y_train = ros.fit_resample(x_train, y_train)
-    return x_train, x_test, y_train, y_test, x_data, y_data
+    try:
+        # create training and test set from feature matrix
+        feature_matrix = pd.read_csv(path_feature_matrix)
+        feature_matrix = feature_matrix.sample(frac=1)
+        # define target and features
+        x_data = feature_matrix.loc[:, feature_matrix.columns != "target"].to_numpy()
+        y_data = feature_matrix["target"].to_numpy()
+        # split into training and test set
+        x_train, x_test, y_train, y_test = train_test_split(
+            x_data, y_data, test_size=test_size, shuffle=True, stratify=y_data
+        )
+        # resample to balance
+        x_train, y_train = ros.fit_resample(x_train, y_train)
+        return x_train, x_test, y_train, y_test, x_data, y_data
+    except:
+        return None, None, None, None, None, None
 
 
 def train_classifier_and_get_accuracies(

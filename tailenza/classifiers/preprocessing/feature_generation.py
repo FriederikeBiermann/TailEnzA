@@ -291,7 +291,6 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
     else:
         for record in alignment:
             if record.id == "Reference":
-                print("§")
                 logging.debug("Reference sequence found")
                 index_reference = indexing_reference(record)
                 logging.debug("Indexing reference sequence", index_reference)
@@ -427,26 +426,29 @@ def featurize_fragments(
     logging.debug("Generating embeddings")
     _, _, batch_tokens = batch_converter(list(zip(sequence_labels, sequence_strs)))
     batch_tokens = batch_tokens.to(device)
-    # Split the batch into two halves
-    mid = batch_tokens.size(0) // 2
-    first_batch_tokens = batch_tokens[:mid]
-    second_batch_tokens = batch_tokens[mid:]
+    # Number of parts to split the batch into
+    #for esm-2
+    #num_parts = len(sequence_strs)
+    num_parts = 4
+    batch_size = batch_tokens.size(0)
+    part_size = batch_size // num_parts
     
-    # Process embeddings for the first half batch
-    with torch.no_grad():
-        results_first = model(first_batch_tokens, repr_layers=[33])
-        logging.debug(f"Results: {results_first.keys()}")
-        token_embeddings_first = results_first["representations"][33]
+    # Initialize an empty list to store the token embeddings for each part
+    token_embeddings_list = []
     
-    # Process embeddings for the second half batch
-    with torch.no_grad():
-        results_second = model(second_batch_tokens, repr_layers=[33])
-        logging.debug(f"Results: {results_second.keys()}")
-        token_embeddings_second = results_second["representations"][33]
+    # Process each part of the batch
+    for i in range(num_parts):
+        start_idx = i * part_size
+        end_idx = (i + 1) * part_size if i != num_parts - 1 else batch_size
+        part_batch_tokens = batch_tokens[start_idx:end_idx]
+
+        with torch.no_grad():
+            results = model(part_batch_tokens, repr_layers=[33])
+            logging.debug(f"Results: {results.keys()}")
+            token_embeddings_list.append(results["representations"][33])
 
     # Concatenate the embeddings
-    token_embeddings = torch.cat([token_embeddings_first, token_embeddings_second], dim=0)
-    
+    token_embeddings = torch.cat(token_embeddings_list, dim=0)
     # Select columns excluding 'Concatenated'
     columns_to_process = fragment_matrix.columns.difference(["Concatenated"])
 
@@ -471,5 +473,7 @@ def featurize_fragments(
     logging.debug(f"Feature matrix shape: {feature_matrix.shape}")
     logging.debug(f"Feature matrix columns: {feature_matrix.columns}")
     logging.debug(f"Feature matrix head: {feature_matrix.head()}")
+    if fragment_matrix.isnull().values.any():
+        raise ValueError("Fragment matrix contains NaN values.")
 
     return feature_matrix

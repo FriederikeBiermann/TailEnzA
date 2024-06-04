@@ -35,7 +35,7 @@ import logging
 import argparse
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 argparser = argparse.ArgumentParser()
@@ -278,7 +278,7 @@ class LSTM(nn.Module):
 names_classifiers = [
     # "RNN",
     "ExtraTreesClassifier",
-    "CNN",
+    #"CNN",
     "LSTM",
     "BasicFFNN",
     "IntermediateFFNN",
@@ -298,7 +298,7 @@ num_columns = 20  # Replace with the actual number of columns in your dataset
 # None as placeholders for specific classifiers in pytorch
 classifiers = [
     ExtraTreesClassifier(max_depth=25, min_samples_leaf=1, class_weight="balanced"),
-    None,
+    #None,
     None,
     None,
     None,
@@ -320,13 +320,13 @@ maxd = 15
 if MODE == "BGC":
     label_mapping = BGC_types
     directory_feature_matrices = (
-        "../preprocessing/preprocessed_data/dataset_transformer"
+        "../preprocessing/preprocessed_data/dataset_transformer_new"
     )
     foldername_output = "../classifiers/Test_transformer_BGC_type/"
 elif MODE == "metabolism":
     label_mapping = ["primary_metabolism", "secondary_metabolism"]
     directory_feature_matrices = (
-        "../preprocessing/preprocessed_data/dataset_transformer"
+        "../preprocessing/preprocessed_data/dataset_transformer_without_divergent"
     )
     foldername_output = "../classifiers/Test_transformer_metabolism/"
 else:
@@ -337,16 +337,33 @@ def main():
     all_metrics = []
     # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
+        if enzyme == "P450":
+            continue
+        # ycao BGC classification makes no sense because all ycaos in antismash DB are RiPPs after filtering 
+        if enzyme == "ycao" and MODE == "BGC":
+            continue
         all_cross_validation_scores = {}
         all_balanced_accuracies = {}
-
         path_feature_matrix = os.path.join(
             directory_feature_matrices, f"{enzyme}_{MODE}_type_feature_matrix.csv"
         )
         df = pd.read_csv(path_feature_matrix)
+        rows_with_nan = df[df.isna().any(axis=1)]
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        columns_with_nan = df.columns[df.isna().any()].tolist()
+        #logging.debug(f"rows with nan: {rows_with_nan[['f2_0','sbr4_932', 'bridging_413']]}")
+        logging.debug(f"colums with nan: {columns_with_nan}")
+
+        initial_row_count = df.shape[0]
+        df = df.dropna()
+        final_row_count = df.shape[0]
+        removed_row_count = initial_row_count - final_row_count
+        logging.info(f"Dropped {removed_row_count} lines with nan values")
         num_columns = df.shape[1]
+        logging.info(f"Number of colums: {num_columns}")
         unique_count_target = df["target"].nunique()
         num_fragments = len(enzymes[enzyme]["splitting_list"])
+
         models = [
             # RNN(
             #     in_features=num_columns - 1,
@@ -355,11 +372,11 @@ def main():
             #     num_fragments=num_fragments,
             # ),
            
-            CNN(
-                total_features=num_columns - 1,
-                num_fragments=num_fragments,
-                num_classes=unique_count_target,
-            ).to(device),
+            #CNN(
+            #    total_features=num_columns - 1,
+            #    num_fragments=num_fragments,
+            #    num_classes=unique_count_target,
+            #).to(device),
             LSTM(
                 in_features=num_columns - 1,
                 hidden_size=20,
@@ -386,8 +403,8 @@ def main():
             path_feature_matrix, test_size
         )
 
-
-        classifiers[1:5] = [
+        
+        classifiers[1:6] = [
             (model, criterion, optimizer)
             for model, criterion, optimizer in zip(models, criteria, optimizers)
         ]
@@ -449,4 +466,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+   main()
