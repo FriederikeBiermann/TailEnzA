@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 import argparse
 import pyhmmer
 import warnings
+import esm
+import logging
+from importlib.resources import files
 from Bio import BiopythonWarning
 from subprocess import DEVNULL
 from tailenza.classifiers.preprocessing.feature_generation import (
@@ -98,11 +101,14 @@ parser.add_argument(
     help="Cutoff score to use for the genbank extraction.",
 )
 
-
+args = parser.parse_args()
 directory_of_classifiers_BGC_type = "../classifiers/classifiers/Test_transformer/"
 directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/Test_transformer/"
 fastas_aligned_before = True
 include_charge_features = True
+package_dir = files("tailenza").joinpath("")
+tmp_dir = os.path("tmp/")
+os.mkdir(tmp_dir, exist_ok=True)
 
 
 def extract_feature_properties(feature):
