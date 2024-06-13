@@ -1,6 +1,5 @@
 import os
 import sys
-print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 from sklearn.preprocessing import LabelEncoder
 import subprocess
 import shutil
@@ -26,7 +25,6 @@ from tailenza.classifiers.preprocessing.feature_generation import (
     fragment_alignment,
     featurize_fragments,
 )
-print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 
 import logging
 from importlib.resources import files
@@ -35,12 +33,15 @@ import torch
 import torch.nn.functional as F
 from sklearn.base import BaseEstimator
 from torch import nn
-print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 
-from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import LSTM, BasicFFNN, IntermediateFFNN, AdvancedFFNN, VeryAdvancedFFNN
+from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import (
+    LSTM,
+    BasicFFNN,
+    IntermediateFFNN,
+    AdvancedFFNN,
+    VeryAdvancedFFNN,
+)
 
-
-print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", BiopythonWarning)
 with warnings.catch_warnings():
@@ -81,25 +82,6 @@ parser.add_argument(
     help="Output directory",
 )
 
-parser.add_argument(
-    "-f",
-    "--frame_length",
-    type=int,
-    nargs=1,
-    metavar="boundary",
-    default=15000,
-    help="determines frame size of the extracted gene window that contains potential novel RiPP BGC",
-)
-
-parser.add_argument(
-    "-t",
-    "--trailing_window",
-    type=int,
-    nargs=1,
-    metavar="boundary",
-    default=5000,
-    help="determines trailing window size of the extracted gene window",
-)
 
 parser.add_argument(
     "-c",
@@ -118,6 +100,7 @@ fastas_aligned_before = True
 include_charge_features = True
 package_dir = files("tailenza").joinpath("")
 hmm_dir = package_dir.joinpath("data", "HMM_files")
+
 
 def extract_feature_properties(feature):
 
@@ -153,14 +136,12 @@ def process_feature_dict(product_dict, enzyme_name):
     return df
 
 
-def set_dataframe_columns(df, frame_length=15000):
+def set_dataframe_columns(df):
     """Sets default columns to a dataframe"""
     df["BGC_type"] = ""
     df["BGC_type_score"] = ""
     df["NP_BGC_affiliation"] = ""
     df["NP_BGC_affiliation_score"] = ""
-    df["30kb_window_start"] = df["cds_start"].astype("int")
-    df["30kb_window_end"] = (df["cds_start"] + frame_length).astype("int")
     return df
 
 
@@ -287,8 +268,7 @@ def genbank_to_fasta_cds(record, fasta_file):
                         sequence = sequence[
                             : len(sequence) - len(sequence) % 3
                         ].translate()
-                    print(len(sequence))
-                    if len(sequence)>800 or len(sequence)<200:
+                    if len(sequence) > 800 or len(sequence) < 200:
                         continue
                     # Create a new SeqRecord and write to the output handle
                     SeqIO.write(
@@ -332,13 +312,15 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
     """Predict values using a classifier"""
     label_encoder = LabelEncoder()
     if mode == "metabolism":
-        label_encoder.classes_ = np.array(["primary_metabolism", "secondary_metabolism"])
+        label_encoder.classes_ = np.array(
+            ["primary_metabolism", "secondary_metabolism"]
+        )
         unique_count_target = 2
     elif mode == "BGC":
         label_encoder.classes_ = np.array(BGC_types)
         unique_count_target = len(BGC_types)
     else:
-        raise ValueError (f"Mode {mode} not available")
+        raise ValueError(f"Mode {mode} not available")
     num_columns = feature_matrix.shape[1]
     logging.debug(f"Num columns: {num_columns}, classes {unique_count_target}")
     model_class = None
@@ -346,16 +328,18 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
         # Check which model type is in the classifier path and assign the appropriate class
         if "_LSTM" in classifier_path:
             classifier = LSTM(
-                in_features=num_columns ,
+                in_features=num_columns,
                 hidden_size=20,
                 num_classes=unique_count_target,
             )
         elif "_BasicFFNN" in classifier_path:
-            classifier = BasicFFNN(num_classes=unique_count_target, in_features=num_columns)
+            classifier = BasicFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
         elif "_IntermediateFFNN" in classifier_path:
             classifier = IntermediateFFNN(
                 num_classes=unique_count_target, in_features=num_columns
-                )
+            )
         elif "_AdvancedFFNN" in classifier_path:
             classifier = AdvancedFFNN(
                 num_classes=unique_count_target, in_features=num_columns
@@ -375,7 +359,7 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
                 feature_matrix.to_numpy(), dtype=torch.float32
             ).to(device)
             logits = classifier(feature_matrix)
-            
+
             predicted_values = torch.argmax(logits, dim=1).cpu().numpy()
             predicted_values = label_encoder.inverse_transform(predicted_values)
             score_predicted_values = F.softmax(logits, dim=1).cpu().numpy()
@@ -386,6 +370,7 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
         predicted_values = classifier.predict(feature_matrix)
         score_predicted_values = classifier.predict_proba(feature_matrix)
     return predicted_values, score_predicted_values
+
 
 def calculate_score(filtered_dataframe, target_BGC_type):
     score = 0
@@ -400,7 +385,7 @@ def calculate_score(filtered_dataframe, target_BGC_type):
 
 
 def process_dataframe_and_save(
-    complete_dataframe, gb_record, trailing_window, output_base_path, score_threshold=0
+    complete_dataframe, gb_record, output_base_path, score_threshold=0
 ):
     scores_list = []  # to store scores for histogram plotting
     results_dict = {}
@@ -410,8 +395,7 @@ def process_dataframe_and_save(
         output_base_path += "/"
 
     for index, row in complete_dataframe.iterrows():
-        window_start = row["30kb_window_start"]
-        window_end = row["30kb_window_end"]
+        window_start, window_end = adjust_window_size(row, complete_dataframe)
 
         # Filter dataframe based on window
         filtered_dataframe = complete_dataframe[
@@ -434,40 +418,13 @@ def process_dataframe_and_save(
                 "metabolism_type": row["NP_BGC_affiliation"],
             }
             protein_details.append(protein_info)
-            feature = SeqFeature(
-                FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
-                type="misc_feature",
-                qualifiers={
-                "protein_id": protein_id,
-                "BGC_type_score": row["BGC_type_score"],
-                "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
-                "BGC_type": row["BGC_type"],
-                "metabolism_type": row["NP_BGC_affiliation"],
-                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
-                },
-            )
-            gb_record.features.append(feature)
-
-            feature = SeqFeature(
-                FeatureLocation(start=max(0, window_start - trailing_window), end=min(
-                window_end + trailing_window, len(gb_record.seq)
-            )),
-                type="misc_feature",
-                qualifiers={
-                    "label": f"Score: {score}",
-                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
-                },
-            )
-            gb_record.features.append(feature)
 
         # Setup the output path based on BGC type
         output_path = os.path.join(output_base_path + row["BGC_type"])
         os.makedirs(output_path, exist_ok=True)
 
         BGC_record = gb_record[
-            max(0, window_start - trailing_window) : min(
-                window_end + trailing_window, len(gb_record.seq)
-            )
+            max(0, window_start) : min(window_end, len(gb_record.seq))
         ]
         BGC_record.annotations["molecule_type"] = "dna"
         filename_record = f"{gb_record.id}_{window_start}_{window_end}_{score}.gb"
@@ -484,20 +441,49 @@ def process_dataframe_and_save(
                 },
             )
             BGC_record.features.append(feature)
-            SeqIO.write(BGC_record, os.path.join(output_path , filename_record), "gb")
+            SeqIO.write(BGC_record, os.path.join(output_path, filename_record), "gb")
+
+            feature = SeqFeature(
+                FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
+                type="misc_feature",
+                qualifiers={
+                    "protein_id": protein_id,
+                    "BGC_type_score": row["BGC_type_score"],
+                    "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
+                    "BGC_type": row["BGC_type"],
+                    "metabolism_type": row["NP_BGC_affiliation"],
+                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
+                },
+            )
+            gb_record.features.append(feature)
+
+            feature = SeqFeature(
+                FeatureLocation(
+                    start=max(0, window_start),
+                    end=min(window_end, len(gb_record.seq)),
+                ),
+                type="misc_feature",
+                qualifiers={
+                    "label": f"Score: {score}",
+                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
+                },
+            )
+            gb_record.features.append(feature)
 
         results_dict[f"{gb_record.id}_{window_start}"] = {
             "ID": gb_record.id,
             "description": gb_record.description,
-            "window_start": max(0, window_start - trailing_window),
-            "window_end": min(
-                window_end + trailing_window, len(gb_record.seq)
-            ),
+            "window_start": max(0, window_start),
+            "window_end": min(window_end, len(gb_record.seq)),
             "score": score,
             "protein_details": protein_details,
             "filename": filename_record,
         }
-    SeqIO.write(gb_record, os.path.join(output_base_path, f"{gb_record.id}_tailenza_output.gb"), "gb")
+    SeqIO.write(
+        gb_record,
+        os.path.join(output_base_path, f"{gb_record.id}_tailenza_output.gb"),
+        "gb",
+    )
 
     return results_dict
 
@@ -530,13 +516,52 @@ def safe_map(row, mapping_dict, column_name):
     return row
 
 
+def adjust_window_size(row, complete_dataframe):
+    if row["BGC_type"] in ["NRPS", "PKS"]:
+        initial_window = 60000
+        trailing_window = 15000
+    else:
+        initial_window = 30000
+        trailing_window = 5000
+
+    window_start = row["cds_start"]
+    window_end = row["cds_end"]
+
+    # Extend window if additional TEs are found within the same BGC type and metabolism is secondary
+    if row["NP_BGC_affiliation"] == "secondary_metabolism":
+        while True:
+            extended_window_start = max(0, window_start - initial_window)
+            extended_window_end = window_end + initial_window
+            extended_dataframe = complete_dataframe[
+                (complete_dataframe["cds_start"] >= extended_window_start)
+                & (complete_dataframe["cds_end"] <= extended_window_end)
+            ]
+            new_tes = extended_dataframe[
+                (extended_dataframe["BGC_type"] == row["BGC_type"])
+                & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
+                & (extended_dataframe.index != row.name)
+            ]
+            if new_tes.empty:
+                break
+            window_start = min(window_start, new_tes["cds_start"].min())
+            window_end = max(window_end, new_tes["cds_end"].max())
+
+    # If only one TE is found, center the window around the TE
+    if (window_end - window_start) == (row["cds_end"] - row["cds_start"]):
+        window_center = (row["cds_start"] + row["cds_end"]) // 2
+        window_start = max(0, window_center - initial_window // 2)
+        window_end = window_center + initial_window // 2
+
+    return max(0, window_start - trailing_window), min(
+        window_end + trailing_window, len(complete_dataframe)
+    )
+
+
 def main():
 
     args = parser.parse_args()
     filename = args.input[0]
-    frame_length = args.frame_length
     package_dir = files("tailenza").joinpath("")
-    trailing_window = args.trailing_window
     score_threshold = args.score_cutoff
 
     try:
@@ -593,21 +618,37 @@ def main():
         logging.debug(f"Aligments {alignments}")
         logging.debug(f"First alignment {alignments['P450']}")
         fragment_matrixes = {
-            key: fragment_alignment(
-                alignments[key],
-                enzymes[key]["splitting_list"],
-                fastas_aligned_before,
-            ) if len(alignments[key])>1 else None
+            key: (
+                fragment_alignment(
+                    alignments[key],
+                    enzymes[key]["splitting_list"],
+                    fastas_aligned_before,
+                )
+                if len(alignments[key]) > 1
+                else None
+            )
             for key in enzymes
         }
-        logging.debug(f"fragment_matrices: {[fragment_matrix.head() for fragment_matrix in fragment_matrixes.values() if fragment_matrix is not None]}")
+        logging.debug(
+            f"fragment_matrices: {[fragment_matrix.head() for fragment_matrix in fragment_matrixes.values() if fragment_matrix is not None]}"
+        )
         feature_matrixes = {
-            key: featurize_fragments(
-                fragment_matrix, batch_converter, model, include_charge_features, device
-            ) if fragment_matrix is not None  else pd.DataFrame()
-            for key, fragment_matrix in fragment_matrixes.items() 
+            key: (
+                featurize_fragments(
+                    fragment_matrix,
+                    batch_converter,
+                    model,
+                    include_charge_features,
+                    device,
+                )
+                if fragment_matrix is not None
+                else pd.DataFrame()
+            )
+            for key, fragment_matrix in fragment_matrixes.items()
         }
-        logging.debug(f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}")
+        logging.debug(
+            f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}"
+        )
 
         classifiers_metabolism_paths = {
             key: directory_of_classifiers_NP_affiliation
@@ -632,10 +673,12 @@ def main():
                     predicted_BGC_types[key] = ["RiPPs"] * len(feature_matrix)
                     scores_predicted_BGC_type[key] = [[1]] * len(feature_matrix)
                     predicted_values_metabolism, score_predicted_values_metabolism = (
-                            classifier_prediction(
-                                feature_matrix, classifiers_metabolism_paths[key], "metabolism"
-                            )
+                        classifier_prediction(
+                            feature_matrix,
+                            classifiers_metabolism_paths[key],
+                            "metabolism",
                         )
+                    )
                     predicted_metabolism_types[key] = predicted_values_metabolism
                     scores_predicted_metabolism[key] = score_predicted_values_metabolism
                 else:
@@ -643,7 +686,6 @@ def main():
                     scores_predicted_BGC_type[key] = []
                     predicted_metabolism_types[key] = []
                     scores_predicted_metabolism[key] = []
-
 
             else:
                 if not feature_matrix.empty:
@@ -657,7 +699,9 @@ def main():
 
                     predicted_values_metabolism, score_predicted_values_metabolism = (
                         classifier_prediction(
-                            feature_matrix, classifiers_metabolism_paths[key], "metabolism"
+                            feature_matrix,
+                            classifiers_metabolism_paths[key],
+                            "metabolism",
                         )
                     )
                     predicted_metabolism_types[key] = predicted_values_metabolism
@@ -733,7 +777,6 @@ def main():
         results_dict = process_dataframe_and_save(
             complete_dataframe,
             gb_record,
-            trailing_window,
             args.output,
             score_threshold=score_threshold,
         )
