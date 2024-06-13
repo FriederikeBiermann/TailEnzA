@@ -56,6 +56,7 @@ setuptools.setup(
     package_data={
         "tailenza": ["data/*.pt"],
     },
+    exclude_package_data={"tailenza": ["prediction/interference_dataset/*"]},
     python_requires=">=3.6",
         install_requires=[
         "biopython==1.78",

@@ -1,5 +1,7 @@
 import os
 import sys
+print(f"Executing script: {os.path.abspath(sys.argv[0])}")
+from sklearn.preprocessing import LabelEncoder
 import subprocess
 import shutil
 import pandas as pd
@@ -12,6 +14,7 @@ from tailenza.data.enzyme_information import enzymes, BGC_types
 import pickle
 import matplotlib.pyplot as plt
 import argparse
+import numpy as np
 import pyhmmer
 import warnings
 import esm
@@ -23,6 +26,8 @@ from tailenza.classifiers.preprocessing.feature_generation import (
     fragment_alignment,
     featurize_fragments,
 )
+print(f"Executing script: {os.path.abspath(sys.argv[0])}")
+
 import logging
 from importlib.resources import files
 import esm
@@ -30,7 +35,12 @@ import torch
 import torch.nn.functional as F
 from sklearn.base import BaseEstimator
 from torch import nn
+print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 
+from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import LSTM, BasicFFNN, IntermediateFFNN, AdvancedFFNN, VeryAdvancedFFNN
+
+
+print(f"Executing script: {os.path.abspath(sys.argv[0])}")
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", BiopythonWarning)
 with warnings.catch_warnings():
@@ -47,7 +57,7 @@ logging.basicConfig(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # create a parser object
 parser = argparse.ArgumentParser(
-    description="TailEnzA extracts Genbank files which contain potential novel RiPP biosynthesis gene clusters."
+    description="TailEnzA extracts Genbank files which contain potential unconventional biosynthesis gene clusters."
 )
 
 parser.add_argument(
@@ -102,14 +112,12 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-directory_of_classifiers_BGC_type = "../classifiers/classifiers/Test_transformer/"
-directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/Test_transformer/"
+directory_of_classifiers_BGC_type = "../classifiers/classifiers/BGC_type/"
+directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/metabolism_type/"
 fastas_aligned_before = True
 include_charge_features = True
 package_dir = files("tailenza").joinpath("")
-tmp_dir = os.path("tmp/")
-os.mkdir(tmp_dir, exist_ok=True)
-
+hmm_dir = package_dir.joinpath("data", "HMM_files")
 
 def extract_feature_properties(feature):
 
@@ -207,7 +215,7 @@ def create_feature_lookup(record):
 
 def run_hmmer(record, enzyme):
     try:
-        enzyme_hmm_filename = os.path.join("HMM_files", enzymes[enzyme]["hmm_file"])
+        enzyme_hmm_filename = os.path.join(hmm_dir, enzymes[enzyme]["hmm_file"])
         fasta = os.path.join(tmp_dir, f"{record.id[:-2]}_temp.fasta")
     except KeyError as e:
         logging.error(f"Key error: {e}")
@@ -279,6 +287,9 @@ def genbank_to_fasta_cds(record, fasta_file):
                         sequence = sequence[
                             : len(sequence) - len(sequence) % 3
                         ].translate()
+                    print(len(sequence))
+                    if len(sequence)>800 or len(sequence)<200:
+                        continue
                     # Create a new SeqRecord and write to the output handle
                     SeqIO.write(
                         SeqIO.SeqRecord(sequence, id=protein_id, description=""),
@@ -317,33 +328,64 @@ def save_enzymes_to_fasta(record_dict):
         SeqIO.write(seq_records, fasta_name, "fasta")
 
 
-def classifier_prediction(feature_matrix, classifier_path):
+def classifier_prediction(feature_matrix, classifier_path, mode):
     """Predict values using a classifier"""
-    with open(classifier_path, "rb") as file:
-        classifier = pickle.load(file)
+    label_encoder = LabelEncoder()
+    if mode == "metabolism":
+        label_encoder.classes_ = np.array(["primary_metabolism", "secondary_metabolism"])
+        unique_count_target = 2
+    elif mode == "BGC":
+        label_encoder.classes_ = np.array(BGC_types)
+        unique_count_target = len(BGC_types)
+    else:
+        raise ValueError (f"Mode {mode} not available")
+    num_columns = feature_matrix.shape[1]
+    logging.debug(f"Num columns: {num_columns}, classes {unique_count_target}")
+    model_class = None
+    if os.path.splitext(classifier_path)[1] == ".pth":
+        # Check which model type is in the classifier path and assign the appropriate class
+        if "_LSTM" in classifier_path:
+            classifier = LSTM(
+                in_features=num_columns ,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            )
+        elif "_BasicFFNN" in classifier_path:
+            classifier = BasicFFNN(num_classes=unique_count_target, in_features=num_columns)
+        elif "_IntermediateFFNN" in classifier_path:
+            classifier = IntermediateFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+                )
+        elif "_AdvancedFFNN" in classifier_path:
+            classifier = AdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        elif "_VeryAdvancedFFNN" in classifier_path:
+            classifier = VeryAdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        else:
+            raise ValueError("Unknown model type in the path")
 
-    if isinstance(
-        classifier, BaseEstimator
-    ):  # Check if the classifier is a scikit-learn model
-        predicted_values = classifier.predict(feature_matrix)
-        score_predicted_values = classifier.predict_proba(feature_matrix)
-    elif isinstance(
-        classifier, nn.Module
-    ):  # Check if the classifier is a PyTorch model
-        classifier.eval()  # Set the model to evaluation mode
+        classifier.load_state_dict(torch.load(classifier_path))
+        classifier.eval()
         classifier.to(device)
         with torch.no_grad():
             feature_matrix = torch.tensor(
                 feature_matrix.to_numpy(), dtype=torch.float32
             ).to(device)
             logits = classifier(feature_matrix)
+            
             predicted_values = torch.argmax(logits, dim=1).cpu().numpy()
+            predicted_values = label_encoder.inverse_transform(predicted_values)
             score_predicted_values = F.softmax(logits, dim=1).cpu().numpy()
     else:
-        raise ValueError("Unsupported classifier type")
+        with open(classifier_path, "rb") as file:
+            classifier = pickle.load(file)
 
+        predicted_values = classifier.predict(feature_matrix)
+        score_predicted_values = classifier.predict_proba(feature_matrix)
     return predicted_values, score_predicted_values
-
 
 def calculate_score(filtered_dataframe, target_BGC_type):
     score = 0
@@ -393,11 +435,27 @@ def process_dataframe_and_save(
             }
             protein_details.append(protein_info)
             feature = SeqFeature(
-                FeatureLocation(start=window_start, end=window_end),
+                FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
+                type="misc_feature",
+                qualifiers={
+                "protein_id": protein_id,
+                "BGC_type_score": row["BGC_type_score"],
+                "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
+                "BGC_type": row["BGC_type"],
+                "metabolism_type": row["NP_BGC_affiliation"],
+                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
+                },
+            )
+            gb_record.features.append(feature)
+
+            feature = SeqFeature(
+                FeatureLocation(start=max(0, window_start - trailing_window), end=min(
+                window_end + trailing_window, len(gb_record.seq)
+            )),
                 type="misc_feature",
                 qualifiers={
                     "label": f"Score: {score}",
-                    "note": f"Predicted using Tailenza 0.0.2, BGC Type: {row['BGC_type']}",
+                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
                 },
             )
             gb_record.features.append(feature)
@@ -426,17 +484,20 @@ def process_dataframe_and_save(
                 },
             )
             BGC_record.features.append(feature)
-            SeqIO.write(BGC_record, os.path.join(output_path + filename_record, "gb"))
+            SeqIO.write(BGC_record, os.path.join(output_path , filename_record), "gb")
 
         results_dict[f"{gb_record.id}_{window_start}"] = {
             "ID": gb_record.id,
             "description": gb_record.description,
-            "window_start": window_start,
-            "window_end": window_end,
+            "window_start": max(0, window_start - trailing_window),
+            "window_end": min(
+                window_end + trailing_window, len(gb_record.seq)
+            ),
             "score": score,
             "protein_details": protein_details,
             "filename": filename_record,
         }
+    SeqIO.write(gb_record, os.path.join(output_base_path, f"{gb_record.id}_tailenza_output.gb"), "gb")
 
     return results_dict
 
@@ -473,18 +534,19 @@ def main():
 
     args = parser.parse_args()
     filename = args.input[0]
-    frame_length = args.frame_length[0]
+    frame_length = args.frame_length
     package_dir = files("tailenza").joinpath("")
-    trailing_window = args.trailing_window[0]
-    score_threshold = args.score_cutoff[0]
+    trailing_window = args.trailing_window
+    score_threshold = args.score_cutoff
 
     try:
-        os.mkdir(args.output[0])
+        os.mkdir(args.output)
     except:
-        print("WARNING: output directory already existing and not empty.")
+        logging.info("WARNING: output directory already existing and not empty.")
 
     # Temporary directory for intermediate files
-    tmp_dir = os.path.join(args.output[0], "tmp")
+    global tmp_dir
+    tmp_dir = os.path.join(args.output, "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
 
     if not (
@@ -497,7 +559,7 @@ def main():
 
     file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
-    model = model.eval()
+    model = model.eval().to(device)
     batch_converter = alphabet.get_batch_converter()
     logging.debug("Model type: %s", type(model))
     logging.debug("Alphabet type: %s", type(alphabet))
@@ -528,83 +590,91 @@ def main():
             enzyme: muscle_align_sequences(filename, enzyme)
             for enzyme, filename in fasta_dict.items()
         }
+        logging.debug(f"Aligments {alignments}")
+        logging.debug(f"First alignment {alignments['P450']}")
         fragment_matrixes = {
             key: fragment_alignment(
                 alignments[key],
                 enzymes[key]["splitting_list"],
                 fastas_aligned_before,
-            )
+            ) if len(alignments[key])>1 else None
             for key in enzymes
         }
+        logging.debug(f"fragment_matrices: {[fragment_matrix.head() for fragment_matrix in fragment_matrixes.values() if fragment_matrix is not None]}")
         feature_matrixes = {
             key: featurize_fragments(
                 fragment_matrix, batch_converter, model, include_charge_features, device
-            )
-            for key, fragment_matrix in fragment_matrixes.items()
+            ) if fragment_matrix is not None  else pd.DataFrame()
+            for key, fragment_matrix in fragment_matrixes.items() 
         }
+        logging.debug(f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}")
 
-        classifiers_metabolism = {
-            key: pickle.load(
-                open(
-                    directory_of_classifiers_NP_affiliation
-                    + key
-                    + enzymes[key]["classifier_metabolism"],
-                    "rb",
-                )
-            )
+        classifiers_metabolism_paths = {
+            key: directory_of_classifiers_NP_affiliation
+            + key
+            + enzymes[key]["classifier_metabolism"]
             for key in enzymes
         }
-        classifiers_BGC_type = {
-            key: pickle.load(
-                open(
-                    directory_of_classifiers_BGC_type
-                    + key
-                    + enzymes[key]["classifier_BGC_type"],
-                    "rb",
-                )
-            )
+        classifiers_BGC_type_paths = {
+            key: directory_of_classifiers_BGC_type
+            + key
+            + enzymes[key]["classifier_BGC_type"]
             for key in enzymes
         }
-        predicted_metabolisms = {
-            key: (
-                classifiers_metabolism[key].predict(feature_matrix)
-                if not feature_matrix.empty
-                else []
-            )
-            for key, feature_matrix in feature_matrixes.items()
-        }
+        predicted_BGC_types = {}
+        scores_predicted_BGC_type = {}
+        predicted_metabolism_types = {}
+        scores_predicted_metabolism = {}
+        for key, feature_matrix in feature_matrixes.items():
+            logging.debug(f"feature matrix {feature_matrix.head()}, key {key}")
+            if key == "ycao":
+                if not feature_matrix.empty:
+                    predicted_BGC_types[key] = ["RiPPs"] * len(feature_matrix)
+                    scores_predicted_BGC_type[key] = [[1]] * len(feature_matrix)
+                    predicted_values_metabolism, score_predicted_values_metabolism = (
+                            classifier_prediction(
+                                feature_matrix, classifiers_metabolism_paths[key], "metabolism"
+                            )
+                        )
+                    predicted_metabolism_types[key] = predicted_values_metabolism
+                    scores_predicted_metabolism[key] = score_predicted_values_metabolism
+                else:
+                    predicted_BGC_types[key] = []
+                    scores_predicted_BGC_type[key] = []
+                    predicted_metabolism_types[key] = []
+                    scores_predicted_metabolism[key] = []
 
-        predicted_BGC_types = {
-            key: (
-                classifiers_BGC_type[key].predict(feature_matrix)
-                if not feature_matrix.empty
-                else []
-            )
-            for key, feature_matrix in feature_matrixes.items()
-        }
 
-        scores_predicted_BGC_type = {
-            key: (
-                classifiers_BGC_type[key].predict_proba(feature_matrix)
-                if not feature_matrix.empty
-                else []
-            )
-            for key, feature_matrix in feature_matrixes.items()
-        }
-        scores_predicted_metabolism = {
-            key: (
-                classifiers_metabolism[key].predict_proba(feature_matrix)
-                if not feature_matrix.empty
-                else []
-            )
-            for key, feature_matrix in feature_matrixes.items()
-        }
+            else:
+                if not feature_matrix.empty:
+                    predicted_values_BGC, score_predicted_values_BGC = (
+                        classifier_prediction(
+                            feature_matrix, classifiers_BGC_type_paths[key], "BGC"
+                        )
+                    )
+                    predicted_BGC_types[key] = predicted_values_BGC
+                    scores_predicted_BGC_type[key] = score_predicted_values_BGC
+
+                    predicted_values_metabolism, score_predicted_values_metabolism = (
+                        classifier_prediction(
+                            feature_matrix, classifiers_metabolism_paths[key], "metabolism"
+                        )
+                    )
+                    predicted_metabolism_types[key] = predicted_values_metabolism
+                    scores_predicted_metabolism[key] = score_predicted_values_metabolism
+                else:
+                    predicted_BGC_types[key] = []
+                    scores_predicted_BGC_type[key] = []
+                    predicted_metabolism_types[key] = []
+                    scores_predicted_metabolism[key] = []
 
         for enzyme in enzymes:
 
             # Create a dictionary mapping for each predicted value
+            logging.debug(predicted_metabolism_types)
+            logging.debug(enzyme_dataframes)
             predicted_metabolism_dict = dict(
-                zip(enzyme_dataframes[enzyme].index, predicted_metabolisms[enzyme])
+                zip(enzyme_dataframes[enzyme].index, predicted_metabolism_types[enzyme])
             )
             score_predicted_metabolism_dict = dict(
                 zip(
@@ -612,7 +682,7 @@ def main():
                     [
                         scores[1]
                         for prediction, scores in zip(
-                            predicted_metabolisms[enzyme],
+                            predicted_metabolism_types[enzyme],
                             scores_predicted_metabolism[enzyme],
                         )
                     ],
@@ -658,18 +728,18 @@ def main():
                 axis=1,
             )
         complete_dataframe.to_csv(
-            os.path.join(args.output[0], f"complete_dataframe_{gb_record.id}.csv")
+            os.path.join(args.output, f"complete_dataframe_{gb_record.id}.csv")
         )
         results_dict = process_dataframe_and_save(
             complete_dataframe,
             gb_record,
             trailing_window,
-            args.output[0],
+            args.output,
             score_threshold=score_threshold,
         )
         result_df = pd.DataFrame(results_dict)
         result_df.to_csv(
-            os.path.join(args.output[0], f"result_dataframe_{gb_record.id}.csv")
+            os.path.join(args.output, f"result_dataframe_{gb_record.id}.csv")
         )
     clear_tmp_dir(tmp_dir)
 

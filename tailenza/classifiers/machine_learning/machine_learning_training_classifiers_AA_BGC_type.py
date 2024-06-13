@@ -23,7 +23,7 @@ from sklearn.ensemble import (
     AdaBoostClassifier,
 )
 from sklearn.neural_network import MLPClassifier
-from classification_methods import (
+from tailenza.classifiers.machine_learning.classification_methods import (
     plot_balanced_accuracies,
     plot_cross_val_scores_with_variance,
     train_classifier_and_get_accuracies,
@@ -38,15 +38,6 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("--mode", type=str, default="BGC")
-argparser.add_argument("--device", type=str, default="cuda")
-
-args = argparser.parse_args()
-MODE = args.mode
-
-# Check if GPU is available
-device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
 
 # FFNN Model 1: Basic Feedforward Neural Network
@@ -274,66 +265,76 @@ class LSTM(nn.Module):
         return out
 
 
-# Update the list of classifier names and classifiers
-names_classifiers = [
-    # "RNN",
-    "ExtraTreesClassifier",
-    #"CNN",
-    "LSTM",
-    "BasicFFNN",
-    "IntermediateFFNN",
-    "AdvancedFFNN",
-    "VeryAdvancedFFNN",
-    "RandomForestClassifier",
-    "AdaBoostClassifier",
-    "DecisionTreeClassifier",
-    "MLPClassifier",
-]
-
-unique_count_target = (
-    10  # Replace with the actual number of unique classes in your target variable
-)
-num_columns = 20  # Replace with the actual number of columns in your dataset
-
-# None as placeholders for specific classifiers in pytorch
-classifiers = [
-    ExtraTreesClassifier(max_depth=25, min_samples_leaf=1, class_weight="balanced"),
-    #None,
-    None,
-    None,
-    None,
-    None,
-    None,
-
-    RandomForestClassifier(max_depth=25, n_estimators=10, max_features=1),
-    AdaBoostClassifier(n_estimators=100),
-    DecisionTreeClassifier(max_depth=25),
-    MLPClassifier(
-        solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
-    ),
-]
-
-# Define max depth of decision tree and other hyperparameters
-test_size = 0.5
-maxd = 15
-
-if MODE == "BGC":
-    label_mapping = BGC_types
-    directory_feature_matrices = (
-        "../preprocessing/preprocessed_data/dataset_transformer_new"
-    )
-    foldername_output = "../classifiers/Test_transformer_BGC_type/"
-elif MODE == "metabolism":
-    label_mapping = ["primary_metabolism", "secondary_metabolism"]
-    directory_feature_matrices = (
-        "../preprocessing/preprocessed_data/dataset_transformer_without_divergent"
-    )
-    foldername_output = "../classifiers/Test_transformer_metabolism/"
-else:
-    raise ValueError (f"MODE must be BGC or metabolism, not {MODE}")
-
 
 def main():
+    # Update the list of classifier names and classifiers
+    names_classifiers = [
+        # "RNN",
+        "ExtraTreesClassifier",
+        #"CNN",
+        "LSTM",
+        "BasicFFNN",
+        "IntermediateFFNN",
+        "AdvancedFFNN",
+        "VeryAdvancedFFNN",
+        "RandomForestClassifier",
+        "AdaBoostClassifier",
+        "DecisionTreeClassifier",
+        "MLPClassifier",
+    ]
+
+    unique_count_target = (
+        10  # Replace with the actual number of unique classes in your target variable
+    )
+    num_columns = 20  # Replace with the actual number of columns in your dataset
+
+    # None as placeholders for specific classifiers in pytorch
+    classifiers = [
+        ExtraTreesClassifier(max_depth=25, min_samples_leaf=1, class_weight="balanced"),
+        #None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    
+        RandomForestClassifier(max_depth=25, n_estimators=10, max_features=1),
+        AdaBoostClassifier(n_estimators=100),
+        DecisionTreeClassifier(max_depth=25),
+        MLPClassifier(
+         solver="lbfgs", alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1
+        ),
+    ]
+    
+    # Define max depth of decision tree and other hyperparameters
+    test_size = 0.5
+    maxd = 15
+
+    if MODE == "BGC":
+        label_mapping = BGC_types
+        directory_feature_matrices = (
+            "../preprocessing/preprocessed_data/dataset_transformer_new"
+        )
+        foldername_output = "../classifiers/Test_transformer_BGC_type/"
+    elif MODE == "metabolism":
+        label_mapping = ["primary_metabolism", "secondary_metabolism"]
+        directory_feature_matrices = (
+         "../preprocessing/preprocessed_data/dataset_transformer_without_divergent"
+        )
+        foldername_output = "../classifiers/Test_transformer_metabolism/"
+    else:
+        raise ValueError (f"MODE must be BGC or metabolism, not {MODE}")
+
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--mode", type=str, default="BGC")
+    argparser.add_argument("--device", type=str, default="cuda")
+
+    args = argparser.parse_args()
+    MODE = args.mode
+
+    # Check if GPU is available
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+
     all_metrics = []
     # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
