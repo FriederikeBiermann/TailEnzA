@@ -89,7 +89,7 @@ parser.add_argument(
     type=float,
     nargs=1,
     metavar="cutoff",
-    default=-1,
+    default=0.75,
     help="Cutoff score to use for the genbank extraction.",
 )
 
@@ -374,14 +374,32 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
 
 def calculate_score(filtered_dataframe, target_BGC_type):
     score = 0
+    hybrid_found = None
+    primary_types = ["NRPS", "PKS"]
+    secondary_types = ["Terpene", "Alkaloid"]
+    relevant_types = []
+    if target_BGC_type in primary_types:
+        relevant_types = primary_types
+    elif target_BGC_type in secondary_types:
+        relevant_types = secondary_types
     for protein_id, row in filtered_dataframe.iterrows():
         # Calculate the adjusted score based on the specific details of the protein
         adjusted_score = (row["BGC_type_score"] + 0.7) * row["NP_BGC_affiliation_score"]
+        logging.debug(f"Score = {score} score per protein = {adjusted_score}, protein = {protein_id})")
         if row["BGC_type"] == target_BGC_type:  # Increase score for matching BGC type
             score += adjusted_score
+        elif row["BGC_type"] in relevant_types:
+            score += adjusted_score/2
         else:  # Decrease score for non-matching BGC type
             score -= adjusted_score
-    return round(score, 3)
+        
+        # Check for hybrid BGC types
+        if row["BGC_type"] in primary_types and target_BGC_type in primary_types and row["BGC_type"] != target_BGC_type:
+            hybrid_found = "NRPS/PKS-hybrid" if target_BGC_type == "NRPS" else "PKS/NRPS-hybrid"
+        elif row["BGC_type"] in secondary_types and target_BGC_type in secondary_types and row["BGC_type"] != target_BGC_type:
+            hybrid_found = "Terpene/Alkaloid-hybrid" if target_BGC_type == "Terpene" else "Alkaloid/Terpene-hybrid"
+
+    return round(score, 3), hybrid_found if hybrid_found else target_BGC_type
 
 
 def process_dataframe_and_save(
@@ -395,7 +413,7 @@ def process_dataframe_and_save(
         output_base_path += "/"
 
     for index, row in complete_dataframe.iterrows():
-        window_start, window_end = adjust_window_size(row, complete_dataframe)
+        window_start, window_end = adjust_window_size(row, complete_dataframe, len(gb_record.seq))
 
         # Filter dataframe based on window
         filtered_dataframe = complete_dataframe[
@@ -404,7 +422,7 @@ def process_dataframe_and_save(
         ]
 
         # Compute score for filtered dataframe using the separate function
-        score = calculate_score(filtered_dataframe, row["BGC_type"])
+        score, BGC_type  = calculate_score(filtered_dataframe, row["BGC_type"])
         scores_list.append(score)
 
         # Create features for each protein with its score
@@ -442,20 +460,21 @@ def process_dataframe_and_save(
             )
             BGC_record.features.append(feature)
             SeqIO.write(BGC_record, os.path.join(output_path, filename_record), "gb")
+            for protein_id, row in filtered_dataframe.iterrows():
 
-            feature = SeqFeature(
-                FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
-                type="misc_feature",
-                qualifiers={
-                    "protein_id": protein_id,
-                    "BGC_type_score": row["BGC_type_score"],
-                    "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
-                    "BGC_type": row["BGC_type"],
-                    "metabolism_type": row["NP_BGC_affiliation"],
-                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
-                },
-            )
-            gb_record.features.append(feature)
+                feature = SeqFeature(
+                    FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
+                    type="misc_feature",
+                    qualifiers={
+                        "protein_id": protein_id,
+                        "BGC_type_score": row["BGC_type_score"],
+                        "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
+                        "BGC_type": row["BGC_type"],
+                        "metabolism_type": row["NP_BGC_affiliation"],
+                        "note": f"Predicted using Tailenza 1.0.0",
+                    },
+                )
+                gb_record.features.append(feature)
 
             feature = SeqFeature(
                 FeatureLocation(
@@ -464,8 +483,8 @@ def process_dataframe_and_save(
                 ),
                 type="misc_feature",
                 qualifiers={
-                    "label": f"Score: {score}",
-                    "note": f"Predicted using Tailenza 1.0.0, BGC Type: {row['BGC_type']}",
+                    "label": f"Score: {score} {BGC_type}",
+                    "note": f"Predicted using Tailenza 1.0.0",
                 },
             )
             gb_record.features.append(feature)
@@ -516,45 +535,63 @@ def safe_map(row, mapping_dict, column_name):
     return row
 
 
-def adjust_window_size(row, complete_dataframe):
-    if row["BGC_type"] in ["NRPS", "PKS"]:
+def adjust_window_size(row, complete_dataframe, len_record):
+    primary_types = ["NRPS", "PKS"]
+    secondary_types = ["Terpene", "Alkaloid"]
+    
+    if row["BGC_type"] in primary_types:
         initial_window = 60000
         trailing_window = 15000
-    else:
-        initial_window = 30000
+        relevant_types = primary_types
+    elif row["BGC_type"] in secondary_types:
+        initial_window = 15000
         trailing_window = 5000
+        relevant_types = secondary_types
+    else:
+        initial_window = 15000
+        trailing_window = 5000
+        relevant_types = [row["BGC_type"]]
 
     window_start = row["cds_start"]
     window_end = row["cds_end"]
+    logging.debug(f"CDS: {window_start}, {window_end}")
+    cds_starts = [window_start]
 
-    # Extend window if additional TEs are found within the same BGC type and metabolism is secondary
+    # Extend window if additional TEs are found within the same BGC type or relevant related types and metabolism is secondary
     if row["NP_BGC_affiliation"] == "secondary_metabolism":
         while True:
-            extended_window_start = max(0, window_start - initial_window)
+            logging.debug(f"CDS: {window_start}, {window_end}")
+
             extended_window_end = window_end + initial_window
             extended_dataframe = complete_dataframe[
-                (complete_dataframe["cds_start"] >= extended_window_start)
+                (complete_dataframe["cds_start"] >= window_start)
                 & (complete_dataframe["cds_end"] <= extended_window_end)
             ]
+            logging.debug(f"extended dataframe {extended_dataframe}")
             new_tes = extended_dataframe[
-                (extended_dataframe["BGC_type"] == row["BGC_type"])
-                & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
-                & (extended_dataframe.index != row.name)
+                ((extended_dataframe["BGC_type"] == row["BGC_type"]) | 
+                 (extended_dataframe["BGC_type"].isin(relevant_types)))
+               # & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
+                & (~extended_dataframe["cds_start"].isin(cds_starts))
             ]
+            cds_starts.extend(new_tes["cds_start"].to_list())
+            logging.debug(f" TEs: {new_tes}")
             if new_tes.empty:
                 break
-            window_start = min(window_start, new_tes["cds_start"].min())
-            window_end = max(window_end, new_tes["cds_end"].max())
+            logging.debug(new_tes["cds_end"].max())
+            logging.debug(window_end)
+            window_end = max(window_end, int(new_tes["cds_end"].max()))
 
     # If only one TE is found, center the window around the TE
     if (window_end - window_start) == (row["cds_end"] - row["cds_start"]):
+        logging.debug("only one CDS")
         window_center = (row["cds_start"] + row["cds_end"]) // 2
+        logging.debug(window_center)
         window_start = max(0, window_center - initial_window // 2)
-        window_end = window_center + initial_window // 2
-
-    return max(0, window_start - trailing_window), min(
-        window_end + trailing_window, len(complete_dataframe)
-    )
+        window_end = window_center + (initial_window // 2)
+    else:
+        window_end = max(window_start + initial_window, window_end)
+    return max(0, window_start - trailing_window), min(window_end + trailing_window, len_record)
 
 
 def main():

@@ -1,4 +1,4 @@
-BGC_types = ["PKS", "Terpene", "lkaloide", "NRPSs", "RiPPs"]
+BGC_types = ["PKS", "Terpene", "Alkaloid", "NRPS", "RiPP"]
 enzymes = {
     "P450": {
         "splitting_list": {
@@ -118,7 +118,7 @@ enzymes = {
         },
         "hmm_file": "Methyltransf_25.hmm",
         "classifier_BGC_type": "_LSTM/LSTM_model.pth",
-        "classifier_metabolism": "_LSTM/LSTM_model.pth",
+        "classifier_metabolism": "_BasicFFNN/BasicFFNN_model.pth",
         "reference_for_alignment": "MAHSSATAGPQADYSGEIAELYDLVHQGKGKDYHREAADLAALVRRHSPKAASLLDVACGTGMHLRHLADSFGTVEGLELSADMLAIARRRNPDAVLHHGDMRDFSLGRRFSAVTCMFSSIGHLAGQAELDAALERFAAHVLPDGVVVVEPWWFPENFTPGYVAAGTVEAGGTTVTRVSHSSREGEATRIEVHYLVAGPDRGITHHEESHRITLFTREQYERAFTAAGLSVEFMPGGPSGRGLFTGLPGAKGETRLEHHHHHH",
         "gap_opening_penalty": -1,
         "gap_extend_penalty": -2,
