@@ -385,21 +385,46 @@ def calculate_score(filtered_dataframe, target_BGC_type):
     for protein_id, row in filtered_dataframe.iterrows():
         # Calculate the adjusted score based on the specific details of the protein
         adjusted_score = (row["BGC_type_score"] + 0.7) * row["NP_BGC_affiliation_score"]
-        logging.debug(f"Score = {score} score per protein = {adjusted_score}, protein = {protein_id})")
+        logging.debug(
+            f"Score = {score} score per protein = {adjusted_score}, protein = {protein_id})"
+        )
         if row["BGC_type"] == target_BGC_type:  # Increase score for matching BGC type
             score += adjusted_score
         elif row["BGC_type"] in relevant_types:
-            score += adjusted_score/2
+            score += adjusted_score / 2
         else:  # Decrease score for non-matching BGC type
             score -= adjusted_score
-        
+
         # Check for hybrid BGC types
-        if row["BGC_type"] in primary_types and target_BGC_type in primary_types and row["BGC_type"] != target_BGC_type:
-            hybrid_found = "NRPS/PKS-hybrid" if target_BGC_type == "NRPS" else "PKS/NRPS-hybrid"
-        elif row["BGC_type"] in secondary_types and target_BGC_type in secondary_types and row["BGC_type"] != target_BGC_type:
-            hybrid_found = "Terpene/Alkaloid-hybrid" if target_BGC_type == "Terpene" else "Alkaloid/Terpene-hybrid"
+        if (
+            row["BGC_type"] in primary_types
+            and target_BGC_type in primary_types
+            and row["BGC_type"] != target_BGC_type
+        ):
+            hybrid_found = (
+                "NRPS/PKS-hybrid" if target_BGC_type == "NRPS" else "PKS/NRPS-hybrid"
+            )
+        elif (
+            row["BGC_type"] in secondary_types
+            and target_BGC_type in secondary_types
+            and row["BGC_type"] != target_BGC_type
+        ):
+            hybrid_found = (
+                "Terpene/Alkaloid-hybrid"
+                if target_BGC_type == "Terpene"
+                else "Alkaloid/Terpene-hybrid"
+            )
 
     return round(score, 3), hybrid_found if hybrid_found else target_BGC_type
+
+
+def overlap_percentage(start1, end1, start2, end2):
+    overlap_start = max(start1, start2)
+    overlap_end = min(end1, end2)
+    overlap_length = max(0, overlap_end - overlap_start)
+    length1 = end1 - start1
+    length2 = end2 - start2
+    return (overlap_length / min(length1, length2)) * 100
 
 
 def process_dataframe_and_save(
@@ -411,9 +436,11 @@ def process_dataframe_and_save(
     # Ensure output path has the proper trailing slash
     if not output_base_path.endswith("/"):
         output_base_path += "/"
-
+    raw_BGCs = []
     for index, row in complete_dataframe.iterrows():
-        window_start, window_end = adjust_window_size(row, complete_dataframe, len(gb_record.seq))
+        window_start, window_end = adjust_window_size(
+            row, complete_dataframe, len(gb_record.seq)
+        )
 
         # Filter dataframe based on window
         filtered_dataframe = complete_dataframe[
@@ -422,72 +449,79 @@ def process_dataframe_and_save(
         ]
 
         # Compute score for filtered dataframe using the separate function
-        score, BGC_type  = calculate_score(filtered_dataframe, row["BGC_type"])
+        score, BGC_type = calculate_score(filtered_dataframe, row["BGC_type"])
         scores_list.append(score)
 
         # Create features for each protein with its score
-        protein_details = []
         for protein_id, row in filtered_dataframe.iterrows():
-            protein_info = {
-                "protein_id": protein_id,
-                "BGC_type_score": row["BGC_type_score"],
-                "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
-                "BGC_type": row["BGC_type"],
-                "metabolism_type": row["NP_BGC_affiliation"],
+            feature = SeqFeature(
+                FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
+                type="misc_feature",
+                qualifiers={
+                    "protein_id": protein_id,
+                    "BGC_type_score": row["BGC_type_score"],
+                    "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
+                    "BGC_type": row["BGC_type"],
+                    "metabolism_type": row["NP_BGC_affiliation"],
+                    "note": f"Predicted using Tailenza 1.0.0",
+                },
+            )
+            gb_record.features.append(feature)
+    # Filter overlapping BGCs
+
+    if score >= score_threshold:
+        # Add a new feature to the GenBank record for this window if score is above threshold
+        feature = SeqFeature(
+            FeatureLocation(
+                start=max(0, window_start),
+                end=min(window_end, len(gb_record.seq)),
+            ),
+            type="misc_feature",
+            qualifiers={
+                "label": f"Score: {score} {BGC_type}",
+                "note": f"Predicted using Tailenza 1.0.0",
+            },
+        )
+        raw_BGCs.append(
+            {
+                "feature": BGC_record,
+                "score": score,
+                "begin": max(0, window_start),
+                "end": min(window_end, len(gb_record.seq)),
             }
-            protein_details.append(protein_info)
+        )
+    raw_BGCs.sort(key=lambda x: x["score"], reverse=True)  # Sort by score descending
+    filtered_BGCs = []
+    for annotation in raw_BGCs:
+        overlap = False
+        for fa in filtered_BGCs:
+            overlap_percent = overlap_percentage(
+                annotation["begin"],
+                annotation["end"],
+                fa["begin"],
+                fa["end"],
+            )
+            if overlap_percent > 50:
+                overlap = True
+                if annotation["score"] > fa["score"]:
+                    fa.update(annotation)
+                break
+        if not overlap:
+            filtered_BGCs.append(annotation)
+    # Setup the output path based on BGC type
+    output_path = os.path.join(output_base_path + row["BGC_type"])
+    os.makedirs(output_path, exist_ok=True)
 
-        # Setup the output path based on BGC type
-        output_path = os.path.join(output_base_path + row["BGC_type"])
-        os.makedirs(output_path, exist_ok=True)
+    for feature, score, window_start, window_end in filtered_BGCs:
 
+        gb_record.features.append(feature)
         BGC_record = gb_record[
             max(0, window_start) : min(window_end, len(gb_record.seq))
         ]
         BGC_record.annotations["molecule_type"] = "dna"
         filename_record = f"{gb_record.id}_{window_start}_{window_end}_{score}.gb"
 
-        if score >= score_threshold:
-            # Add a new feature to the GenBank record for this window if score is above threshold
-            feature = SeqFeature(
-                FeatureLocation(start=window_start, end=window_end),
-                type="predicted_cluster",
-                qualifiers={
-                    "label": "Tailenza prediction",
-                    "score": str(score),
-                    "method": "Tailenza",
-                },
-            )
-            BGC_record.features.append(feature)
-            SeqIO.write(BGC_record, os.path.join(output_path, filename_record), "gb")
-            for protein_id, row in filtered_dataframe.iterrows():
-
-                feature = SeqFeature(
-                    FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
-                    type="misc_feature",
-                    qualifiers={
-                        "protein_id": protein_id,
-                        "BGC_type_score": row["BGC_type_score"],
-                        "NP_BGC_affiliation_score": row["NP_BGC_affiliation_score"],
-                        "BGC_type": row["BGC_type"],
-                        "metabolism_type": row["NP_BGC_affiliation"],
-                        "note": f"Predicted using Tailenza 1.0.0",
-                    },
-                )
-                gb_record.features.append(feature)
-
-            feature = SeqFeature(
-                FeatureLocation(
-                    start=max(0, window_start),
-                    end=min(window_end, len(gb_record.seq)),
-                ),
-                type="misc_feature",
-                qualifiers={
-                    "label": f"Score: {score} {BGC_type}",
-                    "note": f"Predicted using Tailenza 1.0.0",
-                },
-            )
-            gb_record.features.append(feature)
+        SeqIO.write(BGC_record, os.path.join(output_path, filename_record), "gb")
 
         results_dict[f"{gb_record.id}_{window_start}"] = {
             "ID": gb_record.id,
@@ -495,7 +529,6 @@ def process_dataframe_and_save(
             "window_start": max(0, window_start),
             "window_end": min(window_end, len(gb_record.seq)),
             "score": score,
-            "protein_details": protein_details,
             "filename": filename_record,
         }
     SeqIO.write(
@@ -538,7 +571,7 @@ def safe_map(row, mapping_dict, column_name):
 def adjust_window_size(row, complete_dataframe, len_record):
     primary_types = ["NRPS", "PKS"]
     secondary_types = ["Terpene", "Alkaloid"]
-    
+
     if row["BGC_type"] in primary_types:
         initial_window = 60000
         trailing_window = 15000
@@ -569,9 +602,11 @@ def adjust_window_size(row, complete_dataframe, len_record):
             ]
             logging.debug(f"extended dataframe {extended_dataframe}")
             new_tes = extended_dataframe[
-                ((extended_dataframe["BGC_type"] == row["BGC_type"]) | 
-                 (extended_dataframe["BGC_type"].isin(relevant_types)))
-               # & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
+                (
+                    (extended_dataframe["BGC_type"] == row["BGC_type"])
+                    | (extended_dataframe["BGC_type"].isin(relevant_types))
+                )
+                # & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
                 & (~extended_dataframe["cds_start"].isin(cds_starts))
             ]
             cds_starts.extend(new_tes["cds_start"].to_list())
@@ -591,7 +626,9 @@ def adjust_window_size(row, complete_dataframe, len_record):
         window_end = window_center + (initial_window // 2)
     else:
         window_end = max(window_start + initial_window, window_end)
-    return max(0, window_start - trailing_window), min(window_end + trailing_window, len_record)
+    return max(0, window_start - trailing_window), min(
+        window_end + trailing_window, len_record
+    )
 
 
 def main():
