@@ -5,10 +5,12 @@ import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 from Bio import SeqIO, AlignIO
 from sklearn.base import BaseEstimator
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import torch
+from sklearn.preprocessing import LabelEncoder
 import esm
 import logging
 from importlib.resources import files
@@ -19,6 +21,14 @@ from tailenza.classifiers.preprocessing.feature_generation import (
     featurize_fragments,
 )
 from tailenza.data.enzyme_information import enzymes, BGC_types
+
+from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import (
+    LSTM,
+    BasicFFNN,
+    IntermediateFFNN,
+    AdvancedFFNN,
+    VeryAdvancedFFNN,
+)
 
 
 def muscle_align_sequences(fasta_filename, enzyme, enzymes):
@@ -54,52 +64,67 @@ def muscle_align_sequences(fasta_filename, enzyme, enzymes):
     return AlignIO.read(open(f"{fasta_filename}_aligned.fasta"), "fasta")
 
 
-def fragment_alignment(alignment, splitting_list):
-    """Fragment the alignment based on the splitting list"""
-    fragments = []
-    for start, end in splitting_list:
-        fragments.append(alignment[:, start:end])
-    return fragments
-
-
-def featurize_fragments(
-    fragment_matrix, batch_converter, model, include_charge_features, device
-):
-    """Featurize fragments"""
-    feature_matrix = []
-    for fragment in fragment_matrix:
-        features = model.extract_features(
-            fragment, batch_converter, include_charge_features, device
-        )
-        feature_matrix.append(features)
-    return pd.DataFrame(feature_matrix)
-
-
-def classifier_prediction(feature_matrix, classifier_path, device):
+def classifier_prediction(feature_matrix, classifier_path, mode):
     """Predict values using a classifier"""
-    with open(classifier_path, "rb") as file:
-        classifier = pickle.load(file)
+    label_encoder = LabelEncoder()
+    if mode == "metabolism":
+        label_encoder.classes_ = np.array(
+            ["primary_metabolism", "secondary_metabolism"]
+        )
+        unique_count_target = 2
+    elif mode == "BGC":
+        label_encoder.classes_ = np.array(BGC_types)
+        unique_count_target = len(BGC_types)
+    else:
+        raise ValueError(f"Mode {mode} not available")
+    num_columns = feature_matrix.shape[1]
+    logging.debug(f"Num columns: {num_columns}, classes {unique_count_target}")
+    model_class = None
+    if os.path.splitext(classifier_path)[1] == ".pth":
+        # Check which model type is in the classifier path and assign the appropriate class
+        if "_LSTM" in classifier_path:
+            classifier = LSTM(
+                in_features=num_columns,
+                hidden_size=20,
+                num_classes=unique_count_target,
+            )
+        elif "_BasicFFNN" in classifier_path:
+            classifier = BasicFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        elif "_IntermediateFFNN" in classifier_path:
+            classifier = IntermediateFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        elif "_AdvancedFFNN" in classifier_path:
+            classifier = AdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        elif "_VeryAdvancedFFNN" in classifier_path:
+            classifier = VeryAdvancedFFNN(
+                num_classes=unique_count_target, in_features=num_columns
+            )
+        else:
+            raise ValueError("Unknown model type in the path")
 
-    if isinstance(
-        classifier, BaseEstimator
-    ):  # Check if the classifier is a scikit-learn model
-        predicted_values = classifier.predict(feature_matrix)
-        score_predicted_values = classifier.predict_proba(feature_matrix)
-    elif isinstance(
-        classifier, nn.Module
-    ):  # Check if the classifier is a PyTorch model
-        classifier.eval()  # Set the model to evaluation mode
+        classifier.load_state_dict(torch.load(classifier_path))
+        classifier.eval()
         classifier.to(device)
         with torch.no_grad():
             feature_matrix = torch.tensor(
                 feature_matrix.to_numpy(), dtype=torch.float32
             ).to(device)
             logits = classifier(feature_matrix)
+
             predicted_values = torch.argmax(logits, dim=1).cpu().numpy()
+            predicted_values = label_encoder.inverse_transform(predicted_values)
             score_predicted_values = F.softmax(logits, dim=1).cpu().numpy()
     else:
-        raise ValueError("Unsupported classifier type")
+        with open(classifier_path, "rb") as file:
+            classifier = pickle.load(file)
 
+        predicted_values = classifier.predict(feature_matrix)
+        score_predicted_values = classifier.predict_proba(feature_matrix)
     return predicted_values, score_predicted_values
 
 
@@ -150,8 +175,9 @@ logging.basicConfig(
 )
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
-directory_of_classifiers_NP_affiliation = "/path/to/NP/affiliation/classifiers/"
-directory_of_classifiers_BGC_type = "/path/to/BGC/type/classifiers/"
+
+directory_of_classifiers_BGC_type = "../classifiers/classifiers/BGC_type/"
+directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/metabolism_type/"
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -159,9 +185,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Initialize lists for true and predicted labels
 true_BGC_labels = []
 predicted_BGC_labels = []
-true_metabolism_labels = ["secondary metabolism"] * len(
-    enzymes
-)  # All are secondary metabolism
+true_metabolism_labels = []
 predicted_metabolism_labels = []
 
 include_charge_features = True
@@ -175,7 +199,7 @@ def main():
     batch_converter = alphabet.get_batch_converter()
     for enzyme in enzymes:
         for BGC_type in BGC_types:
-            fasta_filename = f"{enzyme}_{BGC_type}_sequences.fasta"
+            fasta_filename = f"/validation_dataset/MIBiG_dataset/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
             alignment = muscle_align_sequences(fasta_filename, enzyme, enzymes)
 
             fragment_matrix = fragment_alignment(
@@ -209,8 +233,10 @@ def main():
                 scores_predicted_BGC_type,
             ) = classifier_prediction(feature_matrix, BGC_type_classifier_path, device)
 
-            true_BGC_label = [BGC_type] * len(alignment - 1)
+            true_BGC_label = [BGC_type] * len(fragment_matrix)
             true_BGC_labels.extend(true_BGC_label)
+            true_metabolism_labels = ["secondary metabolism"] * len(fragment_matrix)
+            true_metabolism_labels.extend(true_metabolism_labels)
 
             predicted_BGC_labels.extend(predicted_BGC_types)
             predicted_metabolism_labels.extend(predicted_metabolisms)
