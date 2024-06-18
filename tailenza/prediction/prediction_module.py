@@ -52,7 +52,7 @@ warnings.filterwarnings(
 warnings.filterwarnings("ignore", category=UserWarning, module="numpy.core.getlimits")
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,7 +78,7 @@ parser.add_argument(
     type=str,
     nargs=1,
     metavar="directory_name",
-    default="Output/",
+    default=["Output/"],
     help="Output directory",
 )
 
@@ -89,7 +89,7 @@ parser.add_argument(
     type=float,
     nargs=1,
     metavar="cutoff",
-    default=0.75,
+    default=[0.75],
     help="Cutoff score to use for the genbank extraction.",
 )
 
@@ -373,6 +373,7 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
 
 
 def calculate_score(filtered_dataframe, target_BGC_type):
+    logging.debug(f"Filtered dataframe {filtered_dataframe}")
     score = 0
     hybrid_found = None
     primary_types = ["NRPS", "PKS"]
@@ -383,7 +384,9 @@ def calculate_score(filtered_dataframe, target_BGC_type):
     elif target_BGC_type in secondary_types:
         relevant_types = secondary_types
     for protein_id, row in filtered_dataframe.iterrows():
+        logging.debug(row)
         # Calculate the adjusted score based on the specific details of the protein
+        logging.debug(row["BGC_type_score"])
         adjusted_score = (row["BGC_type_score"] + 0.7) * row["NP_BGC_affiliation_score"]
         logging.debug(
             f"Score = {score} score per protein = {adjusted_score}, protein = {protein_id})"
@@ -432,7 +435,7 @@ def process_dataframe_and_save(
 ):
     scores_list = []  # to store scores for histogram plotting
     results_dict = {}
-
+    logging.debug(complete_dataframe)
     # Ensure output path has the proper trailing slash
     if not output_base_path.endswith("/"):
         output_base_path += "/"
@@ -469,27 +472,28 @@ def process_dataframe_and_save(
             gb_record.features.append(feature)
     # Filter overlapping BGCs
 
-    if score >= score_threshold:
-        # Add a new feature to the GenBank record for this window if score is above threshold
-        feature = SeqFeature(
-            FeatureLocation(
-                start=max(0, window_start),
-                end=min(window_end, len(gb_record.seq)),
-            ),
-            type="misc_feature",
-            qualifiers={
-                "label": f"Score: {score} {BGC_type}",
-                "note": f"Predicted using Tailenza 1.0.0",
-            },
-        )
-        raw_BGCs.append(
-            {
-                "feature": BGC_record,
-                "score": score,
-                "begin": max(0, window_start),
-                "end": min(window_end, len(gb_record.seq)),
-            }
-        )
+        if score >= score_threshold:
+            # Add a new feature to the GenBank record for this window if score is above threshold
+            feature = SeqFeature(
+                FeatureLocation(
+                    start=max(0, int(window_start)),
+                    end=min(int(window_end), len(gb_record.seq)),
+                ),
+                type="misc_feature",
+                qualifiers={
+                    "label": f"Score: {score} {BGC_type}",
+                    "note": f"Predicted using Tailenza 1.0.0",
+                },
+            )
+            raw_BGCs.append(
+                {
+                    "feature": feature,
+                    "score": score,
+                    "begin": max(0, int(window_start)),
+                    "end": min(int(window_end), len(gb_record.seq)),
+                    "BGC_type":row["BGC_type"]
+                }
+            )
     raw_BGCs.sort(key=lambda x: x["score"], reverse=True)  # Sort by score descending
     filtered_BGCs = []
     for annotation in raw_BGCs:
@@ -508,15 +512,16 @@ def process_dataframe_and_save(
                 break
         if not overlap:
             filtered_BGCs.append(annotation)
+    logging.debug(filtered_BGCs)
     # Setup the output path based on BGC type
-    output_path = os.path.join(output_base_path + row["BGC_type"])
-    os.makedirs(output_path, exist_ok=True)
 
-    for feature, score, window_start, window_end in filtered_BGCs:
+    for feature, score, window_start, window_end, BGC_type in [BGC.values() for BGC in filtered_BGCs]:
+        output_path = os.path.join(output_base_path + BGC_type)
+        os.makedirs(output_path, exist_ok=True)
 
         gb_record.features.append(feature)
         BGC_record = gb_record[
-            max(0, window_start) : min(window_end, len(gb_record.seq))
+            max(0, int(window_start)) : min(int(window_end), len(gb_record.seq))
         ]
         BGC_record.annotations["molecule_type"] = "dna"
         filename_record = f"{gb_record.id}_{window_start}_{window_end}_{score}.gb"
@@ -526,8 +531,8 @@ def process_dataframe_and_save(
         results_dict[f"{gb_record.id}_{window_start}"] = {
             "ID": gb_record.id,
             "description": gb_record.description,
-            "window_start": max(0, window_start),
-            "window_end": min(window_end, len(gb_record.seq)),
+            "window_start": max(0, int(window_start)),
+            "window_end": min(int(window_end), len(gb_record.seq)),
             "score": score,
             "filename": filename_record,
         }
@@ -636,16 +641,16 @@ def main():
     args = parser.parse_args()
     filename = args.input[0]
     package_dir = files("tailenza").joinpath("")
-    score_threshold = args.score_cutoff
+    score_threshold = args.score_cutoff[0]
 
     try:
-        os.mkdir(args.output)
+       os.mkdir(args.output)[0]
     except:
         logging.info("WARNING: output directory already existing and not empty.")
 
     # Temporary directory for intermediate files
     global tmp_dir
-    tmp_dir = os.path.join(args.output, "tmp")
+    tmp_dir = os.path.join(args.output[0], "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
 
     if not (
@@ -675,10 +680,6 @@ def main():
             )
             for enzyme_name, enzyme_dict in tailoring_enzymes_in_record.items()
         }
-        complete_dataframe = pd.concat(
-            [enzyme_dataframe for enzyme_dataframe in enzyme_dataframes.values()],
-            axis=0,
-        )
         # Save enzymes together with reference to fasta for running the alignment on it
         save_enzymes_to_fasta(tailoring_enzymes_in_record)
         fasta_dict = {
@@ -722,6 +723,19 @@ def main():
         }
         logging.debug(
             f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}"
+        )
+        enzyme_dataframes_filtered = {}
+        #Remove enzymes that did not pass the filtering step
+        for enzyme, df in enzyme_dataframes.items():
+            if len(df) != len(feature_matrixes[enzyme]):
+                df_filtered = df[df.index.isin(feature_matrixes[enzyme].index)]
+            else:
+                df_filtered = df
+            enzyme_dataframes_filtered[enzyme] = df_filtered
+        enzyme_dataframes = enzyme_dataframes_filtered
+        complete_dataframe = pd.concat(
+            [enzyme_dataframe for enzyme_dataframe in enzyme_dataframes.values()],
+            axis=0,
         )
 
         classifiers_metabolism_paths = {
@@ -822,6 +836,7 @@ def main():
                     ],
                 )
             )
+            logging.debug(f"Scores {score_predicted_BGC_type_dict}")
             # Map the predictions and scores to the dataframe using the dictionaries
 
             # Apply the function for NP_BGC_affiliation and its score
@@ -846,17 +861,17 @@ def main():
                 axis=1,
             )
         complete_dataframe.to_csv(
-            os.path.join(args.output, f"complete_dataframe_{gb_record.id}.csv")
+            os.path.join(args.output[0], f"complete_dataframe_{gb_record.id}.csv")
         )
         results_dict = process_dataframe_and_save(
             complete_dataframe,
             gb_record,
-            args.output,
+            args.output[0],
             score_threshold=score_threshold,
         )
         result_df = pd.DataFrame(results_dict)
         result_df.to_csv(
-            os.path.join(args.output, f"result_dataframe_{gb_record.id}.csv")
+            os.path.join(args.output[0], f"result_dataframe_{gb_record.id}.csv")
         )
     clear_tmp_dir(tmp_dir)
 

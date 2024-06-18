@@ -304,7 +304,7 @@ def fragment_alignment(alignment, splitting_list, fastas_aligned_before):
                         alignment, fragment, fastas_aligned_before
                     )
                     fragment_matrix[name_fragment] = seqRecord_list_per_fragment[:, 1]
-                fragment_matrix.set_index(pd.Index(seqRecord_list_per_fragment[:, 0]))
+                fragment_matrix.index = pd.Index(seqRecord_list_per_fragment[:, 0])
                 break
     fragment_matrix = remove_incomplete_rows(fragment_matrix)
     # fragment_matrix = trim_fragment_matrix(fragment_matrix, splitting_list)
