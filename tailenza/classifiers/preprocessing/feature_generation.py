@@ -17,6 +17,10 @@ import pandas as pd
 from pathlib import Path
 import torch
 
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 def print_gpu_memory():
     device = torch.device("cuda")
     logging.info("GPU memory stats:")

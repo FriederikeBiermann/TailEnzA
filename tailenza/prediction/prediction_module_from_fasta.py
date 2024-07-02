@@ -53,6 +53,8 @@ def muscle_align_sequences(fasta_filename, enzyme, enzymes):
         str(enzymes[enzyme]["gap_opening_penalty"]),
         "-gapextend",
         str(enzymes[enzyme]["gap_extend_penalty"]),
+        "-center",
+        str(enzymes[enzyme]["center"])
     ]
 
     try:
@@ -148,8 +150,11 @@ def plot_classification_report(cr, title="Classification Report", save_path=None
     lines = cr.split("\n")
     classes = []
     plot_data = []
+    print(lines)
     for line in lines[2 : len(lines) - 3]:
+        print(line)
         line_data = line.split()
+        print(line_data)
         classes.append(line_data[0])
         plot_data.append([float(x) for x in line_data[1 : len(line_data) - 1]])
     plt.figure(figsize=(10, 7))
@@ -182,13 +187,13 @@ def get_true_BGC_label_from_filename(filename, BGC_types):
 
 
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 package_dir = files("tailenza").joinpath("")
 logging.debug("Package directory: %s", package_dir)
 
-directory_of_classifiers_BGC_type = "../classifiers/classifiers/BGC_type/"
-directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/metabolism_type/"
+directory_of_classifiers_BGC_type = "../classifiers/classifiers/Transformer_BGC_type/"
+directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/Transformer_metabolism/"
 
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
@@ -210,10 +215,10 @@ def main():
         true_metabolism_labels = []
         predicted_metabolism_labels = []
         for BGC_type in BGC_types:
-            fasta_filename = f"validation_dataset/MIBiG_dataset/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
+            fasta_filename = f"fake_validation_set/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
             if not os.path.isfile(fasta_filename):
-                print("not_found")
                 continue
+            logging.info(fasta_filename)
             sequences = list(SeqIO.parse(fasta_filename, "fasta"))
 
             # Add the reference sequence
@@ -234,23 +239,17 @@ def main():
                 batch.append(reference_record)
 
                 # Create a temporary FASTA file for the current batch
-                temp_fasta_filename = f"{enzyme}_batch_{i+1}.fasta"
+                temp_fasta_filename = f"{enzyme}_{BGC_type}batch_{i+1}.fasta"
                 with open(temp_fasta_filename, "w") as output_handle:
                     SeqIO.write(batch, output_handle, "fasta")
 
                 # Align the sequences in the batch
                 alignment = muscle_align_sequences(temp_fasta_filename, enzyme, enzymes)
-                print(
-                    f"Alignment for batch {i+1}:",
-                    alignment,
-                    enzymes[enzyme]["splitting_list"],
-                )
 
                 # Fragment the alignment
                 fragment_matrix = fragment_alignment(
                     alignment, enzymes[enzyme]["splitting_list"], True
                 )
-                print(f"Fragment matrix for batch {i+1}:", fragment_matrix)
 
                 # Featurize the fragments
                 feature_matrix = featurize_fragments(
@@ -305,14 +304,14 @@ def main():
 
             true_BGC_label = [BGC_type] * len(combined_feature_matrix)
             true_BGC_labels.extend(true_BGC_label)
-            true_metabolism_label = ["secondary metabolism"] * len(
+            true_metabolism_label = ["secondary_metabolism"] * len(
                 combined_feature_matrix
             )
             true_metabolism_labels.extend(true_metabolism_label)
             predicted_BGC_labels.extend(predicted_BGC_types)
             predicted_metabolism_labels.extend(predicted_metabolisms)
-
         # Calculate and print metrics for BGC type classification
+        logging.info(true_BGC_labels, predicted_BGC_labels)
         print("BGC Type Classification Report:")
         bgc_classification_report = classification_report(
             true_BGC_labels, predicted_BGC_labels, labels=BGC_types
@@ -328,13 +327,13 @@ def main():
         metabolism_classification_report = classification_report(
             true_metabolism_labels,
             predicted_metabolism_labels,
-            labels=["secondary metabolism"],
+            labels=["secondary_metabolism", "primary_metabolism"],
         )
         print(metabolism_classification_report)
         metabolism_confusion_matrix = confusion_matrix(
             true_metabolism_labels,
             predicted_metabolism_labels,
-            labels=["secondary metabolism"],
+            labels=["secondary_metabolism", "primary_metabolism"],
         )
         print("Confusion Matrix:\n", metabolism_confusion_matrix)
 
@@ -366,11 +365,5 @@ def main():
         save_classification_report(
             metabolism_classification_report, cr_save_path_metabolism
         )
-
-        # Plot classification reports
-        plot_classification_report(
-            bgc_classification_report, title="BGC Type Classification Report"
-        )
-        plot_classification_report(
-            metabolism_classification_report, title="Metabolism Classification Report"
-        )
+if __name__ == "__main__":
+    main()

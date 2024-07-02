@@ -52,7 +52,7 @@ warnings.filterwarnings(
 warnings.filterwarnings("ignore", category=UserWarning, module="numpy.core.getlimits")
 
 logging.basicConfig(
-    level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

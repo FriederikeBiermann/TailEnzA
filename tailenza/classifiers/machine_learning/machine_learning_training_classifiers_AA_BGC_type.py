@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/sr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 16 18:02:45 2022
@@ -267,6 +267,10 @@ class LSTM(nn.Module):
 
 
 def main():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--mode", type=str, default="BGC")
+    argparser.add_argument("--device", type=str, default="cuda")
+
     # Update the list of classifier names and classifiers
     names_classifiers = [
         # "RNN",
@@ -307,38 +311,32 @@ def main():
     ]
     
     # Define max depth of decision tree and other hyperparameters
-    test_size = 0.5
+    test_size = 0.3
     maxd = 15
-
-    if MODE == "BGC":
-        label_mapping = BGC_types
-        directory_feature_matrices = (
-            "../preprocessing/preprocessed_data/dataset_transformer_new"
-        )
-        foldername_output = "../classifiers/Test_transformer_BGC_type/"
-    elif MODE == "metabolism":
-        label_mapping = ["primary_metabolism", "secondary_metabolism"]
-        directory_feature_matrices = (
-         "../preprocessing/preprocessed_data/dataset_transformer_without_divergent"
-        )
-        foldername_output = "../classifiers/Test_transformer_metabolism/"
-    else:
-        raise ValueError (f"MODE must be BGC or metabolism, not {MODE}")
-
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("--mode", type=str, default="BGC")
-    argparser.add_argument("--device", type=str, default="cuda")
-
     args = argparser.parse_args()
     MODE = args.mode
 
     # Check if GPU is available
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
+    if MODE == "BGC":
+        label_mapping = BGC_types
+        directory_feature_matrices = (
+            "../preprocessing/preprocessed_data/dataset_transformer_new"
+        )
+        foldername_output = "../classifiers/Transformer_BGC_type/"
+    elif MODE == "metabolism":
+        label_mapping = ["primary_metabolism", "secondary_metabolism"]
+        directory_feature_matrices = (
+         "../preprocessing/preprocessed_data/dataset_transformer_new"
+        )
+        foldername_output = "../classifiers/Transformer_metabolism/"
+    else:
+        raise ValueError (f"MODE must be BGC or metabolism, not {MODE}")
     all_metrics = []
     # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
-        if enzyme == "P450":
+        if enzyme != "P450":
             continue
         # ycao BGC classification makes no sense because all ycaos in antismash DB are RiPPs after filtering 
         if enzyme == "ycao" and MODE == "BGC":
