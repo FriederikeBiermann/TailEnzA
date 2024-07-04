@@ -112,8 +112,8 @@ def train_pytorch_classifier(
                 running_loss = 0.0
 
         # Log histograms of model parameters
-        for name_classifier, param in model.named_parameters():
-            writer.add_histogram(name_classifier, param, epoch)
+        for names_classifier, param in model.named_parameters():
+            writer.add_histogram(names_classifier, param, epoch)
 
         # Early stopping
         model.eval()
@@ -285,7 +285,7 @@ def plot_confusion_matrix(
     plt.ylabel("True labels")
     plt.title("Confusion Matrix for " + classifier_name + " on enzyme " + enzyme)
     plt.savefig(
-        f"{foldernameoutput}{enzyme}_{classifier_name}_confusion_matrix.png", dpi=600
+        f"{foldernameoutput}/{enzyme}_{classifier_name}_confusion_matrix.png", dpi=600
     )
 
 
