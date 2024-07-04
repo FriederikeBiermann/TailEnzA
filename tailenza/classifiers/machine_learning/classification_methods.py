@@ -5,6 +5,7 @@ from sklearn.model_selection import cross_val_score, train_test_split, Stratifie
 from imblearn.over_sampling import RandomOverSampler
 from datetime import datetime
 from torch.optim import Optimizer
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 import pickle
 import matplotlib.pyplot as plt
@@ -31,6 +32,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ros = RandomOverSampler(random_state=0)
 
 
+
 def train_pytorch_classifier(
     model,
     criterion,
@@ -45,6 +47,7 @@ def train_pytorch_classifier(
     label_mapping,
     epochs=100,
     cv=5,
+    patience=10
 ):
     # Move model to device
     model.to(device)
@@ -54,14 +57,17 @@ def train_pytorch_classifier(
     log_dir = f"runs/{date_time}_lecun_{name_classifier}_{enzyme}"
     writer = SummaryWriter(log_dir=log_dir)
     logging.info(f"Processing model {name_classifier}")
+
     # Create output directory if it doesn't exist
     output_dir = os.path.join(output_dir, f"{enzyme}_{name_classifier}")
     os.makedirs(output_dir, exist_ok=True)
+
     if not isinstance(x_train, np.ndarray):
         x_train = x_train.to_numpy()
         y_train = y_train.to_numpy()
         x_test = x_test.to_numpy()
         y_test = y_test.to_numpy()
+
     # Apply RandomOverSampler
     x_train_resampled, y_train_resampled = ros.fit_resample(x_train, y_train)
 
@@ -78,6 +84,10 @@ def train_pytorch_classifier(
     )
     loader = DataLoader(dataset, batch_size=10, shuffle=True)
 
+    scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5)
+    best_loss = float('inf')
+    trigger_times = 0
+
     loss_values = []
 
     for epoch in range(epochs):
@@ -85,7 +95,7 @@ def train_pytorch_classifier(
         for i, (inputs, targets) in enumerate(loader):
             inputs, targets = inputs.to(device), targets.to(device)
             # create sample batch for model architecture logging
-            if i == 0:
+            if i == 0 and epoch == 0:
                 writer.add_graph(model, inputs)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -104,6 +114,22 @@ def train_pytorch_classifier(
         # Log histograms of model parameters
         for name_classifier, param in model.named_parameters():
             writer.add_histogram(name_classifier, param, epoch)
+
+        # Early stopping
+        model.eval()
+        with torch.no_grad():
+            val_outputs = model(torch.tensor(x_test.astype(np.float32)).to(device))
+            val_loss = criterion(val_outputs, torch.tensor(y_test_encoded.astype(np.int64)).to(device)).item()
+            scheduler.step(val_loss)
+
+            if val_loss < best_loss:
+                best_loss = val_loss
+                trigger_times = 0
+            else:
+                trigger_times += 1
+                if trigger_times >= patience:
+                    logging.info(f"Early stopping at epoch {epoch}")
+                    break
 
     # Evaluate the model
     model.eval()
