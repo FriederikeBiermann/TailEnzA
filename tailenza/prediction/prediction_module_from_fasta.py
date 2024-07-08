@@ -215,7 +215,7 @@ def main():
         true_metabolism_labels = []
         predicted_metabolism_labels = []
         for BGC_type in BGC_types:
-            fasta_filename = f"fake_validation_set/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
+            fasta_filename = f"validation_dataset/MIBiG_dataset/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
             if not os.path.isfile(fasta_filename):
                 continue
             logging.info(fasta_filename)

@@ -304,8 +304,6 @@ def main():
     all_metrics = []
     # Go through all enzymes, split between test/training set and train classifiers on them
     for enzyme in enzymes:
-        if enzyme != "P450":
-            continue
         # ycao BGC classification makes no sense because all ycaos in antismash DB are RiPPs after filtering 
         if enzyme == "ycao" and MODE == "BGC":
             continue

@@ -77,7 +77,6 @@ def train_pytorch_classifier(
     y_train_resampled_encoded = label_encoder.transform(y_train_resampled)
     y_test_encoded = label_encoder.transform(y_test)
 
-    model.train()
     dataset = TensorDataset(
         torch.tensor(x_train_resampled.astype(np.float32)).to(device),
         torch.tensor(y_train_resampled_encoded.astype(np.int64)).to(device),
@@ -91,6 +90,7 @@ def train_pytorch_classifier(
     loss_values = []
 
     for epoch in range(epochs):
+        model.train()
         running_loss = 0.0
         for i, (inputs, targets) in enumerate(loader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -193,6 +193,8 @@ def train_pytorch_classifier(
             "AUC Score": auc_score,
             "Log Loss": logloss,
         }
+        metrics_df = pd.DataFrame([metrics_df])
+
 
     # Close the SummaryWriter
     writer.close()
