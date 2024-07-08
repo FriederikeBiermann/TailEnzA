@@ -168,6 +168,8 @@ def muscle_align_sequences(fasta_filename, enzyme):
         str(enzymes[enzyme]["gap_opening_penalty"]),
         "-gapextend",
         str(enzymes[enzyme]["gap_extend_penalty"]),
+        "-center",
+        str(enzymes[enzyme]["center"]),
     ]
 
     try:
@@ -232,7 +234,7 @@ def run_hmmer(record, enzyme):
 
                         evalue = hit.evalue
                         hit_name = hit.name.decode()
-                        if evalue >= 10e-10:
+                        if evalue >= 10e-15:
                             continue
 
                         feature = feature_lookup.get(hit_name)
