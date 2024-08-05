@@ -455,6 +455,12 @@ def process_dataframe_and_save(
 
         # Compute score for filtered dataframe using the separate function
         score, BGC_type = calculate_score(filtered_dataframe, row["BGC_type"])
+        # Take length into consideration
+        if BGC_type in ["NRPS", "PKS"]:
+            score = (score / (window_end - window_start)) * 60_000
+        else:
+            score = (score / (window_end - window_start)) * 15_000
+
         scores_list.append(score)
 
         # Create features for each protein with its score
@@ -472,7 +478,7 @@ def process_dataframe_and_save(
                 },
             )
             gb_record.features.append(feature)
-    # Filter overlapping BGCs
+        # Filter overlapping BGCs
 
         if score >= score_threshold:
             # Add a new feature to the GenBank record for this window if score is above threshold
@@ -493,7 +499,7 @@ def process_dataframe_and_save(
                     "score": score,
                     "begin": max(0, int(window_start)),
                     "end": min(int(window_end), len(gb_record.seq)),
-                    "BGC_type":row["BGC_type"]
+                    "BGC_type": row["BGC_type"],
                 }
             )
     raw_BGCs.sort(key=lambda x: x["score"], reverse=True)  # Sort by score descending
@@ -517,7 +523,9 @@ def process_dataframe_and_save(
     logging.debug(filtered_BGCs)
     # Setup the output path based on BGC type
 
-    for feature, score, window_start, window_end, BGC_type in [BGC.values() for BGC in filtered_BGCs]:
+    for feature, score, window_start, window_end, BGC_type in [
+        BGC.values() for BGC in filtered_BGCs
+    ]:
         output_path = os.path.join(output_base_path + BGC_type)
         os.makedirs(output_path, exist_ok=True)
 
@@ -647,7 +655,7 @@ def main():
     score_threshold = args.score_cutoff[0]
 
     try:
-       os.mkdir(args.output)[0]
+        os.mkdir(args.output)[0]
     except:
         logging.info("WARNING: output directory already existing and not empty.")
 
@@ -728,7 +736,7 @@ def main():
             f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}"
         )
         enzyme_dataframes_filtered = {}
-        #Remove enzymes that did not pass the filtering step
+        # Remove enzymes that did not pass the filtering step
         for enzyme, df in enzyme_dataframes.items():
             if len(df) != len(feature_matrixes[enzyme]):
                 df_filtered = df[df.index.isin(feature_matrixes[enzyme].index)]
