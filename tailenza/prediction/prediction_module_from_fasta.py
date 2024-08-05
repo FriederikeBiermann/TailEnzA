@@ -37,29 +37,21 @@ from tailenza.classifiers.machine_learning.machine_learning_training_classifiers
     VeryAdvancedFFNN,
 )
 
-
 def muscle_align_sequences(fasta_filename, enzyme, enzymes):
     """Align sequences using muscle and returns the alignment"""
     num_sequences = sum(1 for _ in SeqIO.parse(fasta_filename, "fasta"))
-    if num_sequences <= 1:
+    if (num_sequences <= 1):
         return AlignIO.read(open(fasta_filename), "fasta")
 
     muscle_cmd = [
         "muscle",
-        "-in",
-        fasta_filename,
-        "-out",
-        f"{fasta_filename}_aligned.fasta",
-        "-seqtype",
-        "protein",
-        "-maxiters",
-        "16",
-        "-gapopen",
-        str(enzymes[enzyme]["gap_opening_penalty"]),
-        "-gapextend",
-        str(enzymes[enzyme]["gap_extend_penalty"]),
-        "-center",
-        str(enzymes[enzyme]["center"]),
+        "-in", fasta_filename,
+        "-out", f"{fasta_filename}_aligned.fasta",
+        "-seqtype", "protein",
+        "-maxiters", "16",
+        "-gapopen", str(enzymes[enzyme]["gap_opening_penalty"]),
+        "-gapextend", str(enzymes[enzyme]["gap_extend_penalty"]),
+        "-center", str(enzymes[enzyme]["center"]),
     ]
 
     try:
@@ -151,6 +143,7 @@ def plot_confusion_matrix(cm, labels, title="Confusion Matrix", save_path=None):
     plt.ylabel("True")
     if save_path:
         plt.savefig(save_path)
+    plt.show()
 
 
 def plot_classification_report(cr, title="Classification Report", save_path=None):
@@ -175,6 +168,7 @@ def plot_classification_report(cr, title="Classification Report", save_path=None
     plt.ylabel("Classes")
     if save_path:
         plt.savefig(save_path)
+    plt.show()
 
 
 def save_classification_report(cr, save_path):
@@ -230,6 +224,8 @@ def process_batch(
 
 def main():
     setup_logging()
+    global device
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     package_dir = files("tailenza").joinpath("")
     logging.debug("Package directory: %s", package_dir)
 
@@ -237,22 +233,20 @@ def main():
     model, alphabet = load_model_and_alphabet(file_path_model)
     batch_converter = alphabet.get_batch_converter()
 
-    directory_of_classifiers_BGC_type = (
-        "../classifiers/classifiers/Transformer_BGC_type/"
-    )
-    directory_of_classifiers_NP_affiliation = (
-        "../classifiers/classifiers/Transformer_metabolism/"
-    )
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    classifier_dirs = {
+        "BGC_type": "../classifiers/classifiers/Transformer_BGC_type/",
+        "metabolism": "../classifiers/classifiers/Transformer_metabolism/"
+    }
 
     include_charge_features = True
 
-    for enzyme in enzymes:
-        true_BGC_labels = []
-        predicted_BGC_labels = []
-        true_metabolism_labels = []
-        predicted_metabolism_labels = []
+    # Aggregating all true and predicted labels across enzymes
+    aggregated_true_BGC_labels = []
+    aggregated_predicted_BGC_labels = []
+    aggregated_true_metabolism_labels = []
+    aggregated_predicted_metabolism_labels = []
 
+    for enzyme in enzymes:
         for BGC_type in BGC_types:
             fasta_filename = f"validation_dataset/MIBiG_dataset/{enzyme}_MIBiG_{BGC_type}_without_too_long_too_short.fasta"
             if not os.path.isfile(fasta_filename):
@@ -288,7 +282,7 @@ def main():
             predicted_metabolisms, scores_predicted_metabolism = classifier_prediction(
                 feature_matrix,
                 os.path.join(
-                    directory_of_classifiers_NP_affiliation,
+                    classifier_dirs["metabolism"],
                     f"{enzyme}{enzymes[enzyme]['classifier_metabolism']}",
                 ),
                 "metabolism",
@@ -301,69 +295,67 @@ def main():
                 predicted_BGC_types, scores_predicted_BGC_type = classifier_prediction(
                     feature_matrix,
                     os.path.join(
-                        directory_of_classifiers_BGC_type,
+                        classifier_dirs["BGC_type"],
                         f"{enzyme}{enzymes[enzyme]['classifier_BGC_type']}",
                     ),
                     "BGC",
                 )
 
             true_BGC_label = [BGC_type] * len(combined_feature_matrix)
-            true_BGC_labels.extend(true_BGC_label)
-            true_metabolism_label = ["secondary_metabolism"] * len(
-                combined_feature_matrix
-            )
-            true_metabolism_labels.extend(true_metabolism_label)
-            predicted_BGC_labels.extend(predicted_BGC_types)
-            predicted_metabolism_labels.extend(predicted_metabolisms)
+            aggregated_true_BGC_labels.extend(true_BGC_label)
+            true_metabolism_label = ["secondary_metabolism"] * len(combined_feature_matrix)
+            aggregated_true_metabolism_labels.extend(true_metabolism_label)
+            aggregated_predicted_BGC_labels.extend(predicted_BGC_types)
+            aggregated_predicted_metabolism_labels.extend(predicted_metabolisms)
 
-        logging.info(
-            f"True BGC labels: {true_BGC_labels}, Predicted BGC labels: {predicted_BGC_labels}"
-        )
-        bgc_classification_report = classification_report(
-            true_BGC_labels, predicted_BGC_labels, labels=BGC_types
-        )
-        logging.info(f"BGC Type Classification Report:\n{bgc_classification_report}")
-        bgc_confusion_matrix = confusion_matrix(
-            true_BGC_labels, predicted_BGC_labels, labels=BGC_types
-        )
-        logging.info(f"Confusion Matrix:\n{bgc_confusion_matrix}")
+    # Generate overall classification report and confusion matrix
+    bgc_classification_report = classification_report(
+        aggregated_true_BGC_labels, aggregated_predicted_BGC_labels, labels=BGC_types
+    )
+    logging.info(f"BGC Type Classification Report:\n{bgc_classification_report}")
+    bgc_confusion_matrix = confusion_matrix(
+        aggregated_true_BGC_labels, aggregated_predicted_BGC_labels, labels=BGC_types
+    )
+    logging.info(f"Confusion Matrix:\n{bgc_confusion_matrix}")
 
-        metabolism_classification_report = classification_report(
-            true_metabolism_labels,
-            predicted_metabolism_labels,
-            labels=["secondary_metabolism", "primary_metabolism"],
-        )
-        logging.info(
-            f"Metabolism Classification Report:\n{metabolism_classification_report}"
-        )
-        metabolism_confusion_matrix = confusion_matrix(
-            true_metabolism_labels,
-            predicted_metabolism_labels,
-            labels=["secondary_metabolism", "primary_metabolism"],
-        )
-        logging.info(f"Confusion Matrix:\n{metabolism_confusion_matrix}")
+    metabolism_classification_report = classification_report(
+        aggregated_true_metabolism_labels,
+        aggregated_predicted_metabolism_labels,
+        labels=["secondary_metabolism", "primary_metabolism"],
+    )
+    logging.info(
+        f"Metabolism Classification Report:\n{metabolism_classification_report}"
+    )
+    metabolism_confusion_matrix = confusion_matrix(
+        aggregated_true_metabolism_labels,
+        aggregated_predicted_metabolism_labels,
+        labels=["secondary_metabolism", "primary_metabolism"],
+    )
+    logging.info(f"Confusion Matrix:\n{metabolism_confusion_matrix}")
 
-        plot_confusion_matrix(
-            bgc_confusion_matrix,
-            BGC_types,
-            title="BGC Type Confusion Matrix",
-            save_path=f"confusion_matrices/{enzyme}_BGC_type_confusion_matrix.png",
-        )
-        save_classification_report(
-            bgc_classification_report,
-            f"classification_reports/{enzyme}_BGC_type_classification_report.txt",
-        )
-        plot_confusion_matrix(
-            metabolism_confusion_matrix,
-            ["secondary metabolism"],
-            title="Metabolism Confusion Matrix",
-            save_path=f"confusion_matrices/{enzyme}_metabolism_type_confusion_matrix.png",
-        )
-        save_classification_report(
-            metabolism_classification_report,
-            f"classification_reports/{enzyme}_metabolism_type_classification_report.txt",
-        )
+    # Plot and save confusion matrices
+    plot_confusion_matrix(
+        bgc_confusion_matrix,
+        BGC_types,
+        title="Overall BGC Type Confusion Matrix",
+        save_path="confusion_matrices/overall_BGC_type_confusion_matrix.png",
+    )
+    save_classification_report(
+        bgc_classification_report,
+        "classification_reports/overall_BGC_type_classification_report.txt",
+    )
+    plot_confusion_matrix(
+        metabolism_confusion_matrix,
+        ["secondary_metabolism", "primary_metabolism"],
+        title="Overall Metabolism Confusion Matrix",
+        save_path="confusion_matrices/overall_metabolism_confusion_matrix.png",
+    )
+    save_classification_report(
+        metabolism_classification_report,
+        "classification_reports/overall_metabolism_classification_report.txt",
+    )
 
 
 if __name__ == "__main__":
     main()
+

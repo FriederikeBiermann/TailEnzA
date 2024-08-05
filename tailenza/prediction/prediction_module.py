@@ -535,6 +535,7 @@ def process_dataframe_and_save(
             "description": gb_record.description,
             "window_start": max(0, int(window_start)),
             "window_end": min(int(window_end), len(gb_record.seq)),
+            "BGC_type": BGC_type,
             "score": score,
             "filename": filename_record,
         }
