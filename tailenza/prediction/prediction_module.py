@@ -55,7 +55,6 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # create a parser object
 parser = argparse.ArgumentParser(
     description="TailEnzA extracts Genbank files which contain potential unconventional biosynthesis gene clusters."
@@ -93,6 +92,18 @@ parser.add_argument(
     help="Cutoff score to use for the genbank extraction.",
 )
 
+
+parser.add_argument(
+    "-d",
+    "--device",
+    type=str,
+    nargs=1,
+    metavar="device",
+    default=["cuda:0"],
+    help="Cuda device to run extraction on.",
+)
+
+
 args = parser.parse_args()
 directory_of_classifiers_BGC_type = "../classifiers/classifiers/BGC_type/"
 directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/metabolism_type/"
@@ -100,6 +111,7 @@ fastas_aligned_before = True
 include_charge_features = True
 package_dir = files("tailenza").joinpath("")
 hmm_dir = package_dir.joinpath("data", "HMM_files")
+device = torch.device(args.device[0] if torch.cuda.is_available() else "cpu")
 
 
 def extract_feature_properties(feature):
@@ -457,9 +469,9 @@ def process_dataframe_and_save(
         score, BGC_type = calculate_score(filtered_dataframe, row["BGC_type"])
         # Take length into consideration
         if BGC_type in ["NRPS", "PKS"]:
-            score = (score / (window_end - window_start)) * 60_000
+            score = (score / max(60_000, window_end - window_start)) * 60_000
         else:
-            score = (score / (window_end - window_start)) * 15_000
+            score = (score / max(15_000, window_end - window_start)) * 15_000
 
         scores_list.append(score)
 
@@ -508,7 +520,7 @@ def process_dataframe_and_save(
         overlap = False
         for fa in filtered_BGCs:
             overlap_percent = overlap_percentage(
-                annotation["begin"],
+               annotation["begin"],
                 annotation["end"],
                 fa["begin"],
                 fa["end"],
@@ -622,7 +634,7 @@ def adjust_window_size(row, complete_dataframe, len_record):
                     (extended_dataframe["BGC_type"] == row["BGC_type"])
                     | (extended_dataframe["BGC_type"].isin(relevant_types))
                 )
-                # & (extended_dataframe["NP_BGC_affiliation"] == "secondary_metabolism")
+                # & (extendedargs.device[0rame["NP_BGC_affiliation"] == "secondary_metabolism")
                 & (~extended_dataframe["cds_start"].isin(cds_starts))
             ]
             cds_starts.extend(new_tes["cds_start"].to_list())
