@@ -37,21 +37,29 @@ from tailenza.classifiers.machine_learning.machine_learning_training_classifiers
     VeryAdvancedFFNN,
 )
 
+
 def muscle_align_sequences(fasta_filename, enzyme, enzymes):
     """Align sequences using muscle and returns the alignment"""
     num_sequences = sum(1 for _ in SeqIO.parse(fasta_filename, "fasta"))
-    if (num_sequences <= 1):
+    if num_sequences <= 1:
         return AlignIO.read(open(fasta_filename), "fasta")
 
     muscle_cmd = [
         "muscle",
-        "-in", fasta_filename,
-        "-out", f"{fasta_filename}_aligned.fasta",
-        "-seqtype", "protein",
-        "-maxiters", "16",
-        "-gapopen", str(enzymes[enzyme]["gap_opening_penalty"]),
-        "-gapextend", str(enzymes[enzyme]["gap_extend_penalty"]),
-        "-center", str(enzymes[enzyme]["center"]),
+        "-in",
+        fasta_filename,
+        "-out",
+        f"{fasta_filename}_aligned.fasta",
+        "-seqtype",
+        "protein",
+        "-maxiters",
+        "16",
+        "-gapopen",
+        str(enzymes[enzyme]["gap_opening_penalty"]),
+        "-gapextend",
+        str(enzymes[enzyme]["gap_extend_penalty"]),
+        "-center",
+        str(enzymes[enzyme]["center"]),
     ]
 
     try:
@@ -225,7 +233,7 @@ def process_batch(
 def main():
     setup_logging()
     global device
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     package_dir = files("tailenza").joinpath("")
     logging.debug("Package directory: %s", package_dir)
 
@@ -235,7 +243,7 @@ def main():
 
     classifier_dirs = {
         "BGC_type": "../classifiers/classifiers/Transformer_BGC_type/",
-        "metabolism": "../classifiers/classifiers/Transformer_metabolism/"
+        "metabolism": "../classifiers/classifiers/Transformer_metabolism/",
     }
 
     include_charge_features = True
@@ -303,7 +311,9 @@ def main():
 
             true_BGC_label = [BGC_type] * len(combined_feature_matrix)
             aggregated_true_BGC_labels.extend(true_BGC_label)
-            true_metabolism_label = ["secondary_metabolism"] * len(combined_feature_matrix)
+            true_metabolism_label = ["secondary_metabolism"] * len(
+                combined_feature_matrix
+            )
             aggregated_true_metabolism_labels.extend(true_metabolism_label)
             aggregated_predicted_BGC_labels.extend(predicted_BGC_types)
             aggregated_predicted_metabolism_labels.extend(predicted_metabolisms)
@@ -358,4 +368,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

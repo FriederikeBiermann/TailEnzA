@@ -21,18 +21,15 @@ import logging
 from importlib.resources import files
 from Bio import BiopythonWarning
 from subprocess import DEVNULL
-from tailenza.classifiers.preprocessing.feature_generation import (
-    fragment_alignment,
-    featurize_fragments,
-)
+from tailenza.classifiers.preprocessing.feature_generation import AlignmentDataset
 
 import logging
 from importlib.resources import files
-import esm
 import torch
 import torch.nn.functional as F
 from sklearn.base import BaseEstimator
 from torch import nn
+from typing import List, Dict, Callable, Tuple, Optional
 
 from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import (
     LSTM,
@@ -42,6 +39,7 @@ from tailenza.classifiers.machine_learning.machine_learning_training_classifiers
     VeryAdvancedFFNN,
 )
 
+# Suppress warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", BiopythonWarning)
 with warnings.catch_warnings():
@@ -55,7 +53,7 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# create a parser object
+# Argument parser setup
 parser = argparse.ArgumentParser(
     description="TailEnzA extracts Genbank files which contain potential unconventional biosynthesis gene clusters."
 )
@@ -81,7 +79,6 @@ parser.add_argument(
     help="Output directory",
 )
 
-
 parser.add_argument(
     "-c",
     "--score_cutoff",
@@ -91,7 +88,6 @@ parser.add_argument(
     default=[0.75],
     help="Cutoff score to use for the genbank extraction.",
 )
-
 
 parser.add_argument(
     "-d",
@@ -103,7 +99,6 @@ parser.add_argument(
     help="Cuda device to run extraction on.",
 )
 
-
 args = parser.parse_args()
 directory_of_classifiers_BGC_type = "../classifiers/classifiers/BGC_type/"
 directory_of_classifiers_NP_affiliation = "../classifiers/classifiers/metabolism_type/"
@@ -114,8 +109,15 @@ hmm_dir = package_dir.joinpath("data", "HMM_files")
 device = torch.device(args.device[0] if torch.cuda.is_available() else "cpu")
 
 
-def extract_feature_properties(feature):
+def extract_feature_properties(feature: SeqFeature) -> Dict[str, str]:
+    """Extracts properties from a GenBank CDS feature.
 
+    Args:
+        feature (SeqFeature): The feature from which to extract properties.
+
+    Returns:
+        Dict[str, str]: A dictionary containing the sequence, product, cds_start, and cds_end.
+    """
     sequence = feature.qualifiers["translation"][0]
     products = feature.qualifiers.get("product", ["Unknown"])[0]
     cds_start = int(feature.location.start)
@@ -130,15 +132,32 @@ def extract_feature_properties(feature):
     }
 
 
-def get_identifier(feature):
-    """Returns the 'locus_tag' or 'protein_id' from a feature"""
+def get_identifier(feature: SeqFeature) -> str:
+    """Returns the 'locus_tag' or 'protein_id' from a feature.
+
+    Args:
+        feature (SeqFeature): The feature from which to extract the identifier.
+
+    Returns:
+        str: The identifier of the feature.
+    """
     return feature.qualifiers.get(
         "protein_id", feature.qualifiers.get("locus_tag", ["Unknown"])
     )[0]
 
 
-def process_feature_dict(product_dict, enzyme_name):
-    """Process the feature dictionary and returns a DataFrame"""
+def process_feature_dict(
+    product_dict: Dict[str, Dict[str, str]], enzyme_name: str
+) -> pd.DataFrame:
+    """Process the feature dictionary and return a DataFrame.
+
+    Args:
+        product_dict (Dict[str, Dict[str, str]]): The dictionary containing feature data.
+        enzyme_name (str): The name of the enzyme.
+
+    Returns:
+        pd.DataFrame: A DataFrame with processed feature data.
+    """
     if product_dict:
         df = pd.DataFrame(product_dict).transpose()
         df.insert(0, "Enzyme", enzyme_name)
@@ -148,8 +167,15 @@ def process_feature_dict(product_dict, enzyme_name):
     return df
 
 
-def set_dataframe_columns(df):
-    """Sets default columns to a dataframe"""
+def set_dataframe_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Sets default columns to a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to modify.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with additional columns.
+    """
     df["BGC_type"] = ""
     df["BGC_type_score"] = ""
     df["NP_BGC_affiliation"] = ""
@@ -157,13 +183,20 @@ def set_dataframe_columns(df):
     return df
 
 
-def muscle_align_sequences(fasta_filename, enzyme):
-    """Align sequences using muscle and returns the alignment"""
+def muscle_align_sequences(
+    fasta_filename: str, enzyme: str
+) -> AlignIO.MultipleSeqAlignment:
+    """Align sequences using MUSCLE and return the alignment.
 
-    # Check if the fasta file contains only the reference sequence
+    Args:
+        fasta_filename (str): The name of the FASTA file containing sequences.
+        enzyme (str): The name of the enzyme.
+
+    Returns:
+        AlignIO.MultipleSeqAlignment: The aligned sequences.
+    """
     num_sequences = sum(1 for _ in SeqIO.parse(fasta_filename, "fasta"))
     if num_sequences <= 1:
-        # If the file contains only the reference, read it in as an alignment
         return AlignIO.read(open(fasta_filename), "fasta")
 
     muscle_cmd = [
@@ -193,10 +226,14 @@ def muscle_align_sequences(fasta_filename, enzyme):
     return AlignIO.read(open(f"{fasta_filename}_aligned.fasta"), "fasta")
 
 
-def create_feature_lookup(record):
-    """
-    Create a lookup dictionary from the record's features
-    Keyed by protein_id (or locus_tag if protein_id is not available)
+def create_feature_lookup(record: SeqRecord) -> Dict[str, SeqFeature]:
+    """Create a lookup dictionary from the record's features.
+
+    Args:
+        record (SeqRecord): The GenBank record to extract features from.
+
+    Returns:
+        Dict[str, SeqFeature]: A dictionary keyed by protein_id or locus_tag.
     """
     feature_lookup = {}
     for feature in record.features:
@@ -208,7 +245,16 @@ def create_feature_lookup(record):
     return feature_lookup
 
 
-def run_hmmer(record, enzyme):
+def run_hmmer(record: SeqRecord, enzyme: str) -> Dict[str, Dict[str, str]]:
+    """Run HMMER to search for enzyme-specific hits in the sequence.
+
+    Args:
+        record (SeqRecord): The GenBank record containing the sequence.
+        enzyme (str): The enzyme being searched for.
+
+    Returns:
+        Dict[str, Dict[str, str]]: A dictionary of features that matched the HMM profile.
+    """
     try:
         enzyme_hmm_filename = os.path.join(hmm_dir, enzymes[enzyme]["hmm_file"])
         fasta = os.path.join(tmp_dir, f"{record.id[:-2]}_temp.fasta")
@@ -243,7 +289,6 @@ def run_hmmer(record, enzyme):
                 try:
                     pipeline = pyhmmer.plan7.Pipeline(hmm.alphabet)
                     for hit in pipeline.search_hmm(hmm, sequences):
-
                         evalue = hit.evalue
                         hit_name = hit.name.decode()
                         if evalue >= 10e-15:
@@ -261,69 +306,74 @@ def run_hmmer(record, enzyme):
     return results
 
 
-def genbank_to_fasta_cds(record, fasta_file):
+def genbank_to_fasta_cds(record: SeqRecord, fasta_file: str) -> None:
+    """Convert GenBank CDS features to a FASTA file.
+
+    Args:
+        record (SeqRecord): The GenBank record.
+        fasta_file (str): The output FASTA file.
+    """
     if os.path.exists(fasta_file):
         return
     with open(fasta_file, "w") as output_handle:
         for feature in record.features:
             if feature.type == "CDS":
                 try:
-                    # Get the protein ID or locus tag for the sequence ID in the FASTA file
                     protein_id = feature.qualifiers.get(
                         "protein_id", feature.qualifiers.get("locus_tag", ["Unknown"])
                     )[0]
-                    # Try to get the translation from qualifiers
                     translation = feature.qualifiers.get("translation")[0]
-                    if translation:
-                        sequence = Seq(translation)
-                    else:
-                        # If translation not found, extract and translate the sequence
-                        sequence = feature.location.extract(record).seq
-                        sequence = sequence[
-                            : len(sequence) - len(sequence) % 3
-                        ].translate()
-                    if len(sequence) > 800 or len(sequence) < 200:
-                        continue
-                    # Create a new SeqRecord and write to the output handle
-                    SeqIO.write(
-                        SeqIO.SeqRecord(sequence, id=protein_id, description=""),
-                        output_handle,
-                        "fasta",
+                    sequence = (
+                        Seq(translation)
+                        if translation
+                        else feature.location.extract(record).seq.translate()
                     )
+                    if 200 <= len(sequence) <= 800:
+                        SeqIO.write(
+                            SeqRecord(sequence, id=protein_id, description=""),
+                            output_handle,
+                            "fasta",
+                        )
                 except Exception as e:
-                    print(
-                        "Error processing feature:",
-                        e,
-                        "in record",
-                        record.id,
-                        "for feature",
-                        feature,
+                    logging.error(
+                        f"Error processing feature {feature} in record {record.id}: {e}"
                     )
                     continue
 
 
-def save_enzymes_to_fasta(record_dict):
-    # Save enzymes together with reference to fasta
+def save_enzymes_to_fasta(record_dict: Dict[str, Dict[str, Dict[str, str]]]) -> None:
+    """Save enzymes together with the reference to a FASTA file.
+
+    Args:
+        record_dict (Dict[str, Dict[str, Dict[str, str]]]): A dictionary of enzymes and their features.
+    """
     for enzyme, results in record_dict.items():
-        # Create a SeqRecord for the reference sequence
         reference_record = SeqRecord(
             Seq(enzymes[enzyme]["reference_for_alignment"]),
             id="Reference",
             description="Reference Sequence",
         )
-
-        # Generate a list of SeqRecord objects from the results, with the reference sequence at the beginning
         seq_records = [reference_record] + [
             SeqRecord(Seq(result["sequence"]), id=id, description=result["product"])
             for id, result in results.items()
         ]
-
         fasta_name = os.path.join(tmp_dir, f"{enzyme}_tailoring_enzymes.fasta")
         SeqIO.write(seq_records, fasta_name, "fasta")
 
 
-def classifier_prediction(feature_matrix, classifier_path, mode):
-    """Predict values using a classifier"""
+def classifier_prediction(
+    feature_matrix: pd.DataFrame, classifier_path: str, mode: str
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Predict values using a classifier.
+
+    Args:
+        feature_matrix (pd.DataFrame): The feature matrix to use for predictions.
+        classifier_path (str): The path to the classifier model.
+        mode (str): The prediction mode ('metabolism' or 'BGC').
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Predicted values and their associated scores.
+    """
     label_encoder = LabelEncoder()
     if mode == "metabolism":
         label_encoder.classes_ = np.array(
@@ -339,32 +389,9 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
     logging.debug(f"Num columns: {num_columns}, classes {unique_count_target}")
     model_class = None
     if os.path.splitext(classifier_path)[1] == ".pth":
-        # Check which model type is in the classifier path and assign the appropriate class
-        if "_LSTM" in classifier_path:
-            classifier = LSTM(
-                in_features=num_columns,
-                hidden_size=20,
-                num_classes=unique_count_target,
-            )
-        elif "_BasicFFNN" in classifier_path:
-            classifier = BasicFFNN(
-                num_classes=unique_count_target, in_features=num_columns
-            )
-        elif "_IntermediateFFNN" in classifier_path:
-            classifier = IntermediateFFNN(
-                num_classes=unique_count_target, in_features=num_columns
-            )
-        elif "_AdvancedFFNN" in classifier_path:
-            classifier = AdvancedFFNN(
-                num_classes=unique_count_target, in_features=num_columns
-            )
-        elif "_VeryAdvancedFFNN" in classifier_path:
-            classifier = VeryAdvancedFFNN(
-                num_classes=unique_count_target, in_features=num_columns
-            )
-        else:
-            raise ValueError("Unknown model type in the path")
-
+        classifier = get_classifier_by_path(
+            classifier_path, num_columns, unique_count_target
+        )
         classifier.load_state_dict(torch.load(classifier_path))
         classifier.eval()
         classifier.to(device)
@@ -386,7 +413,51 @@ def classifier_prediction(feature_matrix, classifier_path, mode):
     return predicted_values, score_predicted_values
 
 
-def calculate_score(filtered_dataframe, target_BGC_type):
+def get_classifier_by_path(
+    classifier_path: str, num_columns: int, unique_count_target: int
+) -> nn.Module:
+    """Determine and return the appropriate classifier based on the file path.
+
+    Args:
+        classifier_path (str): The path to the classifier.
+        num_columns (int): The number of columns in the feature matrix.
+        unique_count_target (int): The number of unique classes.
+
+    Returns:
+        nn.Module: The classifier model.
+    """
+    if "_LSTM" in classifier_path:
+        return LSTM(
+            in_features=num_columns, hidden_size=20, num_classes=unique_count_target
+        )
+    elif "_BasicFFNN" in classifier_path:
+        return BasicFFNN(num_classes=unique_count_target, in_features=num_columns)
+    elif "_IntermediateFFNN" in classifier_path:
+        return IntermediateFFNN(
+            num_classes=unique_count_target, in_features=num_columns
+        )
+    elif "_AdvancedFFNN" in classifier_path:
+        return AdvancedFFNN(num_classes=unique_count_target, in_features=num_columns)
+    elif "_VeryAdvancedFFNN" in classifier_path:
+        return VeryAdvancedFFNN(
+            num_classes=unique_count_target, in_features=num_columns
+        )
+    else:
+        raise ValueError("Unknown model type in the path")
+
+
+def calculate_score(
+    filtered_dataframe: pd.DataFrame, target_BGC_type: str
+) -> Tuple[float, str]:
+    """Calculate the score for a given dataframe filtered by a BGC type.
+
+    Args:
+        filtered_dataframe (pd.DataFrame): The filtered dataframe to score.
+        target_BGC_type (str): The target BGC type.
+
+    Returns:
+        Tuple[float, str]: The calculated score and hybrid BGC type if applicable.
+    """
     logging.debug(f"Filtered dataframe {filtered_dataframe}")
     score = 0
     hybrid_found = None
@@ -399,20 +470,17 @@ def calculate_score(filtered_dataframe, target_BGC_type):
         relevant_types = secondary_types
     for protein_id, row in filtered_dataframe.iterrows():
         logging.debug(row)
-        # Calculate the adjusted score based on the specific details of the protein
-        logging.debug(row["BGC_type_score"])
         adjusted_score = (row["BGC_type_score"] + 0.7) * row["NP_BGC_affiliation_score"]
         logging.debug(
             f"Score = {score} score per protein = {adjusted_score}, protein = {protein_id})"
         )
-        if row["BGC_type"] == target_BGC_type:  # Increase score for matching BGC type
+        if row["BGC_type"] == target_BGC_type:
             score += adjusted_score
         elif row["BGC_type"] in relevant_types:
             score += adjusted_score / 2
-        else:  # Decrease score for non-matching BGC type
+        else:
             score -= adjusted_score
 
-        # Check for hybrid BGC types
         if (
             row["BGC_type"] in primary_types
             and target_BGC_type in primary_types
@@ -435,7 +503,18 @@ def calculate_score(filtered_dataframe, target_BGC_type):
     return round(score, 3), hybrid_found if hybrid_found else target_BGC_type
 
 
-def overlap_percentage(start1, end1, start2, end2):
+def overlap_percentage(start1: int, end1: int, start2: int, end2: int) -> float:
+    """Calculate the percentage of overlap between two genomic regions.
+
+    Args:
+        start1 (int): Start position of the first region.
+        end1 (int): End position of the first region.
+        start2 (int): Start position of the second region.
+        end2 (int): End position of the second region.
+
+    Returns:
+        float: The percentage overlap between the two regions.
+    """
     overlap_start = max(start1, start2)
     overlap_end = min(end1, end2)
     overlap_length = max(0, overlap_end - overlap_start)
@@ -445,12 +524,25 @@ def overlap_percentage(start1, end1, start2, end2):
 
 
 def process_dataframe_and_save(
-    complete_dataframe, gb_record, output_base_path, score_threshold=0
-):
-    scores_list = []  # to store scores for histogram plotting
+    complete_dataframe: pd.DataFrame,
+    gb_record: SeqRecord,
+    output_base_path: str,
+    score_threshold: float = 0,
+) -> Dict[str, Dict[str, str]]:
+    """Process the dataframe, filter based on score, and save results.
+
+    Args:
+        complete_dataframe (pd.DataFrame): The complete dataframe with all features.
+        gb_record (SeqRecord): The GenBank record being processed.
+        output_base_path (str): The base path for saving output files.
+        score_threshold (float, optional): The minimum score threshold for saving. Defaults to 0.
+
+    Returns:
+        Dict[str, Dict[str, str]]: A dictionary of results including BGC information and scores.
+    """
+    scores_list = []
     results_dict = {}
     logging.debug(complete_dataframe)
-    # Ensure output path has the proper trailing slash
     if not output_base_path.endswith("/"):
         output_base_path += "/"
     raw_BGCs = []
@@ -458,24 +550,17 @@ def process_dataframe_and_save(
         window_start, window_end = adjust_window_size(
             row, complete_dataframe, len(gb_record.seq)
         )
-
-        # Filter dataframe based on window
         filtered_dataframe = complete_dataframe[
             (complete_dataframe["cds_start"] >= window_start)
             & (complete_dataframe["cds_end"] <= window_end)
         ]
-
-        # Compute score for filtered dataframe using the separate function
         score, BGC_type = calculate_score(filtered_dataframe, row["BGC_type"])
-        # Take length into consideration
         if BGC_type in ["NRPS", "PKS"]:
             score = (score / max(60_000, window_end - window_start)) * 60_000
         else:
             score = (score / max(15_000, window_end - window_start)) * 15_000
 
         scores_list.append(score)
-
-        # Create features for each protein with its score
         for protein_id, row in filtered_dataframe.iterrows():
             feature = SeqFeature(
                 FeatureLocation(start=row["cds_start"], end=row["cds_end"]),
@@ -490,10 +575,7 @@ def process_dataframe_and_save(
                 },
             )
             gb_record.features.append(feature)
-        # Filter overlapping BGCs
-
         if score >= score_threshold:
-            # Add a new feature to the GenBank record for this window if score is above threshold
             feature = SeqFeature(
                 FeatureLocation(
                     start=max(0, int(window_start)),
@@ -514,13 +596,13 @@ def process_dataframe_and_save(
                     "BGC_type": row["BGC_type"],
                 }
             )
-    raw_BGCs.sort(key=lambda x: x["score"], reverse=True)  # Sort by score descending
+    raw_BGCs.sort(key=lambda x: x["score"], reverse=True)
     filtered_BGCs = []
     for annotation in raw_BGCs:
         overlap = False
         for fa in filtered_BGCs:
             overlap_percent = overlap_percentage(
-               annotation["begin"],
+                annotation["begin"],
                 annotation["end"],
                 fa["begin"],
                 fa["end"],
@@ -533,8 +615,6 @@ def process_dataframe_and_save(
         if not overlap:
             filtered_BGCs.append(annotation)
     logging.debug(filtered_BGCs)
-    # Setup the output path based on BGC type
-
     for feature, score, window_start, window_end, BGC_type in [
         BGC.values() for BGC in filtered_BGCs
     ]:
@@ -568,7 +648,12 @@ def process_dataframe_and_save(
     return results_dict
 
 
-def plot_histogram(scores):
+def plot_histogram(scores: List[float]) -> None:
+    """Plot and save a histogram of scores.
+
+    Args:
+        scores (List[float]): List of scores to plot.
+    """
     plt.hist(scores, bins=30, edgecolor="black")
     plt.title("Distribution of Scores")
     plt.xlabel("Score")
@@ -577,7 +662,12 @@ def plot_histogram(scores):
     plt.grid(True)
 
 
-def clear_tmp_dir(tmp_dir):
+def clear_tmp_dir(tmp_dir: str) -> None:
+    """Clear the temporary directory.
+
+    Args:
+        tmp_dir (str): Path to the temporary directory.
+    """
     for filename in os.listdir(tmp_dir):
         file_path = os.path.join(tmp_dir, filename)
         try:
@@ -589,14 +679,38 @@ def clear_tmp_dir(tmp_dir):
             print("Failed to delete %s. Reason: %s" % (file_path, e))
 
 
-def safe_map(row, mapping_dict, column_name):
-    key = row.name  # row.name will give the index of the row
+def safe_map(
+    row: pd.Series, mapping_dict: Dict[str, str], column_name: str
+) -> pd.Series:
+    """Safely map values from a dictionary to a DataFrame column.
+
+    Args:
+        row (pd.Series): The row to map.
+        mapping_dict (Dict[str, str]): The mapping dictionary.
+        column_name (str): The name of the column to update.
+
+    Returns:
+        pd.Series: The updated row.
+    """
+    key = row.name
     if key in mapping_dict:
         row[column_name] = mapping_dict[key]
     return row
 
 
-def adjust_window_size(row, complete_dataframe, len_record):
+def adjust_window_size(
+    row: pd.Series, complete_dataframe: pd.DataFrame, len_record: int
+) -> Tuple[int, int]:
+    """Adjust the window size around a feature based on its BGC type.
+
+    Args:
+        row (pd.Series): The row of the dataframe representing the feature.
+        complete_dataframe (pd.DataFrame): The complete dataframe.
+        len_record (int): The length of the sequence record.
+
+    Returns:
+        Tuple[int, int]: The start and end of the adjusted window.
+    """
     primary_types = ["NRPS", "PKS"]
     secondary_types = ["Terpene", "Alkaloid"]
 
@@ -618,7 +732,6 @@ def adjust_window_size(row, complete_dataframe, len_record):
     logging.debug(f"CDS: {window_start}, {window_end}")
     cds_starts = [window_start]
 
-    # Extend window if additional TEs are found within the same BGC type or relevant related types and metabolism is secondary
     if row["NP_BGC_affiliation"] == "secondary_metabolism":
         while True:
             logging.debug(f"CDS: {window_start}, {window_end}")
@@ -634,7 +747,6 @@ def adjust_window_size(row, complete_dataframe, len_record):
                     (extended_dataframe["BGC_type"] == row["BGC_type"])
                     | (extended_dataframe["BGC_type"].isin(relevant_types))
                 )
-                # & (extendedargs.device[0rame["NP_BGC_affiliation"] == "secondary_metabolism")
                 & (~extended_dataframe["cds_start"].isin(cds_starts))
             ]
             cds_starts.extend(new_tes["cds_start"].to_list())
@@ -645,7 +757,6 @@ def adjust_window_size(row, complete_dataframe, len_record):
             logging.debug(window_end)
             window_end = max(window_end, int(new_tes["cds_end"].max()))
 
-    # If only one TE is found, center the window around the TE
     if (window_end - window_start) == (row["cds_end"] - row["cds_start"]):
         logging.debug("only one CDS")
         window_center = (row["cds_start"] + row["cds_end"]) // 2
@@ -659,30 +770,24 @@ def adjust_window_size(row, complete_dataframe, len_record):
     )
 
 
-def main():
-
+def main() -> None:
+    """Main function for processing GenBank files and predicting BGC types."""
     args = parser.parse_args()
     filename = args.input[0]
     package_dir = files("tailenza").joinpath("")
     score_threshold = args.score_cutoff[0]
 
     try:
-        os.mkdir(args.output)[0]
-    except:
+        os.mkdir(args.output[0])
+    except FileExistsError:
         logging.info("WARNING: output directory already existing and not empty.")
 
-    # Temporary directory for intermediate files
     global tmp_dir
     tmp_dir = os.path.join(args.output[0], "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
 
-    if not (
-        filename.endswith(".gbff")
-        or filename.endswith(".gb")
-        or filename.endswith(".gbk")
-    ):
+    if not filename.endswith((".gbff", ".gb", ".gbk")):
         raise ValueError("Input file must be a GenBank file.")
-    # Load the ESM-1b model
 
     file_path_model = package_dir.joinpath("data", "esm1b_t33_650M_UR50S.pt")
     model, alphabet = esm.pretrained.load_model_and_alphabet_local(file_path_model)
@@ -692,8 +797,8 @@ def main():
     logging.debug("Alphabet type: %s", type(alphabet))
     logging.debug("Batch converter type: %s", type(batch_converter))
     logging.debug("Model loaded successfully")
+
     for gb_record in SeqIO.parse(filename, "genbank"):
-        # Create datastructure for results and fill with hmmer results
         tailoring_enzymes_in_record = {
             key: run_hmmer(gb_record, key) for key in enzymes
         }
@@ -703,52 +808,38 @@ def main():
             )
             for enzyme_name, enzyme_dict in tailoring_enzymes_in_record.items()
         }
-        # Save enzymes together with reference to fasta for running the alignment on it
+
         save_enzymes_to_fasta(tailoring_enzymes_in_record)
-        fasta_dict = {
-            key: os.path.join(tmp_dir, f"{key}_tailoring_enzymes.fasta")
-            for key in enzymes
-        }
+
         alignments = {
-            enzyme: muscle_align_sequences(filename, enzyme)
-            for enzyme, filename in fasta_dict.items()
-        }
-        logging.debug(f"Aligments {alignments}")
-        logging.debug(f"First alignment {alignments['P450']}")
-        fragment_matrixes = {
-            key: (
-                fragment_alignment(
-                    alignments[key],
-                    enzymes[key]["splitting_list"],
-                    fastas_aligned_before,
-                )
-                if len(alignments[key]) > 1
-                else None
+            enzyme: muscle_align_sequences(
+                os.path.join(tmp_dir, f"{enzyme}_tailoring_enzymes.fasta"), enzyme
             )
-            for key in enzymes
+            for enzyme in enzymes
         }
-        logging.debug(
-            f"fragment_matrices: {[fragment_matrix.head() for fragment_matrix in fragment_matrixes.values() if fragment_matrix is not None]}"
-        )
-        feature_matrixes = {
-            key: (
-                featurize_fragments(
-                    fragment_matrix,
-                    batch_converter,
-                    model,
-                    include_charge_features,
-                    device,
+
+        logging.debug(f"Alignments: {alignments}")
+        logging.debug(f"First alignment: {alignments['P450']}")
+
+        # Using AlignmentDataset for processing
+        feature_matrixes = {}
+        for enzyme, alignment in alignments.items():
+            if len(alignment) > 1:
+                dataset = AlignmentDataset(enzymes, enzyme, alignment)
+                dataset.filter_alignment()
+                dataset.fragment_alignment(fastas_aligned_before=True)
+                feature_matrix = dataset.featurize_fragments(
+                    batch_converter, model, device
                 )
-                if fragment_matrix is not None
-                else pd.DataFrame()
-            )
-            for key, fragment_matrix in fragment_matrixes.items()
-        }
+                feature_matrixes[enzyme] = feature_matrix
+            else:
+                feature_matrixes[enzyme] = pd.DataFrame()
+
         logging.debug(
-            f"feature_matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if feature_matrix is not None]}"
+            f"Feature matrices: {[feature_matrix.head() for feature_matrix in feature_matrixes.values() if not feature_matrix.empty]}"
         )
+
         enzyme_dataframes_filtered = {}
-        # Remove enzymes that did not pass the filtering step
         for enzyme, df in enzyme_dataframes.items():
             if len(df) != len(feature_matrixes[enzyme]):
                 df_filtered = df[df.index.isin(feature_matrixes[enzyme].index)]
@@ -756,29 +847,35 @@ def main():
                 df_filtered = df
             enzyme_dataframes_filtered[enzyme] = df_filtered
         enzyme_dataframes = enzyme_dataframes_filtered
+
         complete_dataframe = pd.concat(
             [enzyme_dataframe for enzyme_dataframe in enzyme_dataframes.values()],
             axis=0,
         )
 
         classifiers_metabolism_paths = {
-            key: directory_of_classifiers_NP_affiliation
-            + key
-            + enzymes[key]["classifier_metabolism"]
+            key: os.path.join(
+                directory_of_classifiers_NP_affiliation,
+                key + enzymes[key]["classifier_metabolism"],
+            )
             for key in enzymes
         }
         classifiers_BGC_type_paths = {
-            key: directory_of_classifiers_BGC_type
-            + key
-            + enzymes[key]["classifier_BGC_type"]
+            key: os.path.join(
+                directory_of_classifiers_BGC_type,
+                key + enzymes[key]["classifier_BGC_type"],
+            )
             for key in enzymes
         }
+
         predicted_BGC_types = {}
         scores_predicted_BGC_type = {}
         predicted_metabolism_types = {}
         scores_predicted_metabolism = {}
+
         for key, feature_matrix in feature_matrixes.items():
-            logging.debug(f"feature matrix {feature_matrix.head()}, key {key}")
+            logging.debug(f"Feature matrix for {key}: {feature_matrix.head()}")
+
             if key == "ycao":
                 if not feature_matrix.empty:
                     predicted_BGC_types[key] = ["RiPPs"] * len(feature_matrix)
@@ -797,7 +894,6 @@ def main():
                     scores_predicted_BGC_type[key] = []
                     predicted_metabolism_types[key] = []
                     scores_predicted_metabolism[key] = []
-
             else:
                 if not feature_matrix.empty:
                     predicted_values_BGC, score_predicted_values_BGC = (
@@ -824,10 +920,9 @@ def main():
                     scores_predicted_metabolism[key] = []
 
         for enzyme in enzymes:
-
-            # Create a dictionary mapping for each predicted value
             logging.debug(predicted_metabolism_types)
             logging.debug(enzyme_dataframes)
+
             predicted_metabolism_dict = dict(
                 zip(enzyme_dataframes[enzyme].index, predicted_metabolism_types[enzyme])
             )
@@ -859,10 +954,8 @@ def main():
                     ],
                 )
             )
-            logging.debug(f"Scores {score_predicted_BGC_type_dict}")
-            # Map the predictions and scores to the dataframe using the dictionaries
+            logging.debug(f"Scores: {score_predicted_BGC_type_dict}")
 
-            # Apply the function for NP_BGC_affiliation and its score
             complete_dataframe = complete_dataframe.apply(
                 safe_map,
                 args=(predicted_metabolism_dict, "NP_BGC_affiliation"),
@@ -873,8 +966,6 @@ def main():
                 args=(score_predicted_metabolism_dict, "NP_BGC_affiliation_score"),
                 axis=1,
             )
-
-            # Apply the function for BGC_type and its score
             complete_dataframe = complete_dataframe.apply(
                 safe_map, args=(predicted_BGC_type_dict, "BGC_type"), axis=1
             )
@@ -883,19 +974,23 @@ def main():
                 args=(score_predicted_BGC_type_dict, "BGC_type_score"),
                 axis=1,
             )
+
         complete_dataframe.to_csv(
             os.path.join(args.output[0], f"complete_dataframe_{gb_record.id}.csv")
         )
+
         results_dict = process_dataframe_and_save(
             complete_dataframe,
             gb_record,
             args.output[0],
             score_threshold=score_threshold,
         )
+
         result_df = pd.DataFrame(results_dict)
         result_df.to_csv(
             os.path.join(args.output[0], f"result_dataframe_{gb_record.id}.csv")
         )
+
     clear_tmp_dir(tmp_dir)
 
 

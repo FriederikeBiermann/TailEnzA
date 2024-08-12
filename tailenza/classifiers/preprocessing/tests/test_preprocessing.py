@@ -102,7 +102,7 @@ def test_convert_splitting_list(dataset):
         dataset.splitting_list, index_reference
     )
     assert len(converted_splitting_list) == len(dataset.splitting_list)
-    assert converted_splitting_list[0][0] == 1
+    assert converted_splitting_list[0][1] == 0
     assert converted_splitting_list != dataset.splitting_list
 
 

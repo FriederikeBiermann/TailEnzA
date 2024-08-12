@@ -1,19 +1,16 @@
 import os
-import Bio
 import pandas as pd
-from Bio import SeqIO
-from Bio import pairwise2
+from Bio import AlignIO, SeqIO, pairwise2
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio import AlignIO
-from feature_generation import fragment_alignment, featurize_fragments, filter_alignment
-from tailenza.data.enzyme_information import BGC_types, enzymes
-from importlib.resources import files
 from pathlib import Path
 import torch
 import esm
-import importlib.resources as pkg_resources
 import logging
+from typing import List, Dict, Optional, Callable, Tuple
+from tailenza.classifiers.preprocessing.feature_generation import AlignmentDataset
+from tailenza.data.enzyme_information import BGC_types, enzymes
+from importlib.resources import files
 
 DEBUGGING = False
 # if fastas aligned before True-> use alignment made for instance in geneious utilizing MUSCLE align -> best for larger datasets
@@ -62,7 +59,9 @@ if DEBUGGING:
     BGC_types = ["ripp"]
 
 
-def create_filenames(enzyme, BGC_types, foldername_training_sets):
+def create_filenames(
+    enzyme: str, BGC_types: List[str], foldername_training_sets: str
+) -> Dict[str, List[str]]:
     """
     Create a dictionary of filenames categorized by BGC types for a specific enzyme.
 
@@ -77,7 +76,7 @@ def create_filenames(enzyme, BGC_types, foldername_training_sets):
     all_files = os.listdir(foldername_training_sets)
 
     # Initialize a dictionary to store filenames for each BGC type
-    filenames_dict = {BGC_type: [] for BGC_type in BGC_types}
+    filenames_dict: Dict[str, List[str]] = {BGC_type: [] for BGC_type in BGC_types}
     filenames_dict["NCBI"] = []
 
     # Populate the dictionary based on the enzyme and BGC types
@@ -103,8 +102,13 @@ def create_filenames(enzyme, BGC_types, foldername_training_sets):
 
 
 def process_datasets(
-    foldername_training_sets, model, batch_converter, include_charge_features=True
-):
+    foldername_training_sets: str,
+    model: torch.nn.Module,
+    batch_converter: Callable[
+        [List[Tuple[str, str]]], Tuple[List[str], torch.Tensor, torch.Tensor]
+    ],
+    include_charge_features: bool = True,
+) -> None:
     """
     Process datasets to generate a feature matrix for each enzyme-BGC type pair.
 
@@ -129,28 +133,25 @@ def process_datasets(
                 logging.debug("Processing dataset: %s", dataset)
                 msa_path = Path(dataset)
                 logging.debug(enzymes)
-                splitting_list = enzymes[enzyme]["splitting_list"]
-                logging.debug("Splitting list created for %s", enzyme)
-                logging.debug(splitting_list)
+
+                # Use the AlignmentDataset class to handle dataset processing
                 alignment = AlignIO.read(msa_path, "fasta")
-                min_length = enzymes[enzyme]["min_length"]
-                max_length = enzymes[enzyme]["max_length"]
-                logging.debug("Alignment loaded for %s", enzyme)
-                logging.debug(f"Length of alignment: {len(alignment)}")
-                alignment = filter_alignment(alignment, min_length, max_length)
-                logging.debug("Alignment filtered for %s", enzyme)
-                logging.debug(f"Length of filtered alignment: {len(alignment)}")
-                fragment_matrix = fragment_alignment(
-                    alignment, splitting_list, FASTAS_ALIGNED_BEFORE
+                dataset_obj = AlignmentDataset(enzymes, enzyme, alignment)
+
+                # Filter alignment based on sequence length
+                filtered_alignment = dataset_obj._filter_alignment()
+                dataset_obj.alignment = filtered_alignment
+
+                # Perform fragment alignment
+                fragment_matrix = dataset_obj.fragment_alignment(
+                    fastas_aligned_before=FASTAS_ALIGNED_BEFORE
                 )
                 logging.debug("Fragment matrix created for %s", enzyme)
                 logging.debug(fragment_matrix)
-                feature_matrix = featurize_fragments(
-                    fragment_matrix,
-                    batch_converter,
-                    model,
-                    include_charge_features,
-                    device,
+
+                # Featurize fragments
+                feature_matrix = dataset_obj.featurize_fragments(
+                    batch_converter, model, device=device
                 )
                 logging.debug("Feature matrix created for %s", enzyme)
                 if BGC_type in BGC_types:
@@ -186,4 +187,3 @@ if __name__ == "__main__":
     process_datasets(
         foldername_training_sets, model, batch_converter, INCLUDE_CHARGE_FEATURES
     )
-
