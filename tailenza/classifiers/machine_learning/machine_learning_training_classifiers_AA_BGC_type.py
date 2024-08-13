@@ -321,7 +321,7 @@ def main():
         metrics = process_enzyme(
             enzyme,
             args.mode,
-            device,
+            directory_feature_matrices,
             classifiers,
             names_classifiers,
             foldername_output,

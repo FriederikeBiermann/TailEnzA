@@ -493,7 +493,7 @@ class TrainerScikitLearn(Trainer):
 
         # Calculate accuracy
         cross_validation_classifier = cross_val_score(
-            classifier, x_data, y_data, cv=self.cv, scoring="f1_macro"
+            classifier, x_data, y_data, cv=5, scoring="f1_macro"
         )
         balanced_accuracy_classifier = balanced_accuracy_score(
             y_test, test_predict_classifier
@@ -549,6 +549,5 @@ class TrainerScikitLearn(Trainer):
             enzyme,
             name_classifier,
             BGC_types,
-            foldernameoutput,
         )
         return cross_validation_classifier, balanced_accuracy_classifier
