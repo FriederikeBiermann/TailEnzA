@@ -114,7 +114,7 @@ def setup_device(device_name: str) -> torch.device:
 
 
 def initialize_classifiers(
-    device: torch.device, num_columns: int, unique_count_target: int, num_fragments: int
+    device: torch.device, num_columns: int, unique_count_target: int
 ) -> Tuple[List[str], List]:
     """Initializes classifiers including both PyTorch models and Scikit-Learn classifiers.
 
@@ -141,10 +141,7 @@ def initialize_classifiers(
 
     models = [
         LSTM(
-            in_features=num_columns - 1,
-            hidden_size=20,
-            num_fragments=num_fragments,
-            num_classes=unique_count_target,
+            in_features=num_columns - 1, hidden_size=20, num_classes=unique_count_target
         ).to(device),
         BasicFFNN(num_classes=unique_count_target, in_features=num_columns - 1).to(
             device
@@ -252,10 +249,10 @@ def process_enzyme(
     x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(
         path_feature_matrix, test_size
     )
-    num_fragments = len(enzymes[enzyme]["splitting_list"])
+
     # Re-initialize classifiers for the current enzyme
     names_classifiers, classifiers = initialize_classifiers(
-        device, num_columns, unique_count_target, num_fragments
+        device, num_columns, unique_count_target
     )
 
     all_cross_validation_scores = {}
@@ -333,3 +330,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
