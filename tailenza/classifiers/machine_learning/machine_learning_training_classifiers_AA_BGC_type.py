@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 16 18:02:45 2022
-
-@author: friederike
-"""
-
 import os
 import time
 from datetime import datetime
@@ -220,8 +212,7 @@ def process_enzyme(
     enzyme: str,
     mode: str,
     directory_feature_matrices: str,
-    classifiers: List,
-    names_classifiers: List[str],
+    device: torch.device,
     foldername_output: str,
     label_mapping: List[str],
     test_size: float,
@@ -232,8 +223,7 @@ def process_enzyme(
         enzyme (str): The name of the enzyme being processed.
         mode (str): The mode of operation, either 'BGC' or 'metabolism'.
         directory_feature_matrices (str): The directory containing the feature matrices.
-        classifiers (List): The list of classifiers (both PyTorch models and Scikit-Learn classifiers).
-        names_classifiers (List[str]): The list of classifier names.
+        device (torch.device): The device to use for computation.
         foldername_output (str): The output directory for saving results.
         label_mapping (List[str]): The label mapping for the classes.
         test_size (float): The proportion of the dataset to include in the test split.
@@ -258,6 +248,11 @@ def process_enzyme(
 
     x_train, x_test, y_train, y_test, x_data, y_data = create_training_test_set(
         path_feature_matrix, test_size
+    )
+
+    # Re-initialize classifiers for the current enzyme
+    names_classifiers, classifiers = initialize_classifiers(
+        device, num_columns, unique_count_target
     )
 
     all_cross_validation_scores = {}
@@ -301,20 +296,13 @@ def process_enzyme(
 
 
 def main():
-    """Main entry point for the script. Handles argument parsing, device setup, classifier initialization, and the processing of enzymes."""
+    """Main entry point for the script. Handles argument parsing, device setup, and the processing of enzymes."""
     args = parse_arguments()
     device = setup_device(args.device)
     label_mapping, directory_feature_matrices, foldername_output = (
         prepare_output_directories(args.mode)
     )
 
-    # Placeholder values, will be overwritten in the loop
-    num_columns = 20
-    unique_count_target = 10
-
-    names_classifiers, classifiers = initialize_classifiers(
-        device, num_columns, unique_count_target
-    )
     all_metrics = []
 
     for enzyme in enzymes:
@@ -322,8 +310,7 @@ def main():
             enzyme,
             args.mode,
             directory_feature_matrices,
-            classifiers,
-            names_classifiers,
+            device,
             foldername_output,
             label_mapping,
             test_size=0.3,
@@ -343,3 +330,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

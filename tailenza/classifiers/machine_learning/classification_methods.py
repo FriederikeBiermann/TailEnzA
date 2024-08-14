@@ -356,10 +356,10 @@ class TrainerPytorch(Trainer):
                         break
 
         # Evaluation
-        self.evaluate(x_test, y_test_encoded, name_classifier, enzyme, epoch)
         self._plot_and_save(loss_values, name_classifier, enzyme)
         self._save_model(name_classifier, enzyme)
         self.writer.close()
+        return self.evaluate(x_test, y_test_encoded, name_classifier, enzyme, epoch)
 
     def evaluate(
         self,
@@ -425,8 +425,9 @@ class TrainerPytorch(Trainer):
             logging.info(f"Log Loss: {logloss}")
 
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred)
+            y_test = self.label_encoder.inverse_transform(y_test_encoded)
             self._plot_confusion_matrix(
-                y_test_encoded,
+                y_test,
                 y_pred_decoded,
                 enzyme,
                 name_classifier,
