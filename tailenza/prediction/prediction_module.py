@@ -40,7 +40,7 @@ from tailenza.classifiers.machine_learning.machine_learning_training_classifiers
 )
 
 
-class Prediction:
+class Predictor:
     def __init__(self, classifier_path: str, device: str):
         """
         Initialize the Prediction class.
@@ -290,6 +290,12 @@ class Record:
         self.tmp_dir = os.path.join(output_dir, "tmp")
         self.tailoring_enzymes = {}
         self.alignments = {}
+        self.feature_matrixes = {}
+        self.predicted_BGC_types = {}
+        self.scores_predicted_BGC_type = {}
+        self.predicted_metabolism_types = {}
+        self.scores_predicted_metabolism = {}
+        record.complete_dataframe = pd.DataFrame()
         os.makedirs(self.tmp_dir, exist_ok=True)
 
     def create_feature_lookup(self) -> Dict[str, SeqFeature]:
@@ -427,7 +433,6 @@ class Record:
 
     def process_dataframe_and_save(
         self,
-        complete_dataframe: pd.DataFrame,
         score_threshold: float = 0,
     ) -> Dict[str, Dict[str, str]]:
         """
@@ -443,9 +448,9 @@ class Record:
         results_dict = {}
         raw_BGCs = []
 
-        for _, row in complete_dataframe.iterrows():
+        for _, row in self.complete_dataframe.iterrows():
             putative_bgc = self.create_putative_bgc(
-                row, complete_dataframe, row["BGC_type"]
+                row, self.complete_dataframe, row["BGC_type"]
             )
             score, BGC_type = putative_bgc.calculate_score()
 
@@ -510,7 +515,16 @@ class Record:
 
         return results_dict
 
-    def run_hmmer(self, enzyme: str) -> Dict[str, Dict[str, str]]:
+    def get_tailoring_enzymes(self, hmm_dir: str) -> pd.DataFrame:
+        """
+        Get tailoring enzymes from the record.
+
+        """
+        df = pd.DataFrame()
+        for enzyme in enzymes:
+            results = self.run_hmmer(enzyme, files("tailenza.hmm").parent, hmm_dir)
+
+    def run_hmmer(self, enzyme: str, hmm_dir: str) -> Dict[str, Dict[str, str]]:
         """
         Run HMMER to search for enzyme-specific hits in the sequence.
 
@@ -681,6 +695,14 @@ class Record:
         df["NP_BGC_affiliation_score"] = ""
         return df
 
+    def align_sequences(self):
+        """
+        Align sequences using MUSCLE for all enzymes for all tailoring enzymes.
+        """
+        fasta_file = os.path.join(self.tmp_dir, f"{enzyme}_tailoring_enzymes.fasta")
+        for enzyme in enzymes:
+            self.muscle_align_sequences(fasta_filename=fasta_file, enzyme=enzyme)
+
     def muscle_align_sequences(
         self, fasta_filename: str, enzyme: str
     ) -> AlignIO.MultipleSeqAlignment:
@@ -740,23 +762,144 @@ class Record:
             fasta_name = os.path.join(self.tmp_dir, f"{enzyme}_tailoring_enzymes.fasta")
             SeqIO.write(seq_records, fasta_name, "fasta")
 
-        def safe_map(
-            self, row: pd.Series, mapping_dict: Dict[str, str], column_name: str
-        ) -> pd.Series:
-            """Safely map values from a dictionary to a DataFrame column.
+    def safe_map(
+        self, row: pd.Series, mapping_dict: Dict[str, str], column_name: str
+    ) -> pd.Series:
+        """Safely map values from a dictionary to a DataFrame column.
 
-            Args:
-                row (pd.Series): The row to map.
-                mapping_dict (Dict[str, str]): The mapping dictionary.
-                column_name (str): The name of the column to update.
+        Args:
+            row (pd.Series): The row to map.
+            mapping_dict (Dict[str, str]): The mapping dictionary.
+            column_name (str): The name of the column to update.
 
-            Returns:
-                pd.Series: The updated row.
-            """
-            key = row.name
-            if key in mapping_dict:
-                row[column_name] = mapping_dict[key]
-            return row
+        Returns:
+            pd.Series: The updated row.
+        """
+        key = row.name
+        if key in mapping_dict:
+            row[column_name] = mapping_dict[key]
+        return row
+
+    def featurize_alignments(self, batch_converter, model):
+        """
+        Featurize the alignments for all enzymes.
+        """
+
+        for enzyme, alignment in self.alignments.items():
+            if len(alignment) > 1:
+                dataset = AlignmentDataset(enzymes, enzyme, alignment)
+                dataset.filter_alignment()
+                dataset.fragment_alignment(fastas_aligned_before=True)
+                feature_matrix = dataset.featurize_fragments(
+                    batch_converter, model, self.device
+                )
+                self.feature_matrixes[enzyme] = feature_matrix
+            else:
+                self.feature_matrixes[enzyme] = pd.DataFrame()
+
+    def predict_BGC_types(self, directory_of_classifiers_BGC_type: str):
+        """
+        Predict BGC types for all enzymes.
+        """
+        for enzyme, feature_matrix in self.feature_matrixes.items():
+            if not feature_matrix.empty:
+                if enzyme == "ycao":
+                        self.predicted_BGC_types[enzyme] = ["RiPP"] * len(feature_matrix)
+                        self.scores_predicted_BGC_type[enzyme] = [[1]] * len(feature_matrix)
+                else:
+                    classifier_path = os.path.join(
+                        directory_of_classifiers_BGC_type, f"{enzyme}{enzymes[enzyme]["classifier_BGC_type"]}"
+                    )
+                    
+                    prediction = Predictor(classifier_path, self.device)
+                    predicted_values, score_predicted_values = prediction.predict(
+                        feature_matrix, mode="BGC"
+                    )
+                    self.predicted_BGC_types[enzyme] = predicted_values
+                    self.scores_predicted_BGC_type[enzyme] = score_predicted_values
+            else:
+                self.predicted_BGC_types[enzyme] = []
+                self.scores_predicted_BGC_type[enzyme] = []
+
+    def predict_metabolism_types(self, directory_of_classifiers_NP_affiliation: str):
+        """
+        Predict metabolism types for all enzymes.
+        """
+        for enzyme, feature_matrix in self.feature_matrixes.items():
+            if not feature_matrix.empty:
+                classifier_path = os.path.join(
+                    directory_of_classifiers_NP_affiliation, f"{enzyme}{enzymes[enzyme]["classifier_metabolism"]}"
+                )
+                prediction = Predictor(classifier_path, self.device)
+                predicted_values, score_predicted_values = prediction.predict(
+                    feature_matrix, mode="metabolism"
+                )
+                self.predicted_metabolism_types[enzyme] = predicted_values
+                self.scores_predicted_metabolism[enzyme] = score_predicted_values
+            else:
+                self.predicted_metabolism_types[enzyme] = []
+                self.scores_predicted_metabolism[enzyme] = []
+    
+    def concatenate_results(self):
+        """
+        Concatenate results from all enzymes and set the complete_dataframe.
+        """
+        self.complete_dataframe = pd.concat(
+                [
+                    self.set_dataframe_columns(
+                        self.process_feature_dict(
+                            self.tailoring_enzymes_in_record[enzyme], enzyme
+                        )
+                    )
+                    for enzyme in enzymes
+                ],
+                axis=0,
+            )
+        for enzyme in enzymes:
+            predicted_metabolism_dict = dict(
+                zip(self.complete_dataframe.index, self.predicted_metabolism_types[enzyme])
+            )
+            score_predicted_metabolism_dict = dict(
+                zip(
+                    self.complete_dataframe.index,
+                    [scores[1] for scores in self.scores_predicted_metabolism[enzyme]],
+                )
+            )
+
+            predicted_BGC_type_dict = dict(
+                zip(self.complete_dataframe.index, self.predicted_BGC_types[enzyme])
+            )
+            score_predicted_BGC_type_dict = dict(
+                zip(
+                    self.complete_dataframe.index,
+                    [max(scores) for scores in self.scores_predicted_BGC_type[enzyme]],
+                )
+            )
+
+            self.complete_dataframe = self.complete_dataframe.apply(
+                lambda row: self.record.safe_map(
+                    row, predicted_metabolism_dict, "NP_BGC_affiliation"
+                ),
+                axis=1,
+            )
+            self.complete_dataframe = self.complete_dataframe.apply(
+                lambda row: self.record.safe_map(
+                    row, score_predicted_metabolism_dict, "NP_BGC_affiliation_score"
+                ),
+                axis=1,
+            )
+            self.complete_dataframe = self.complete_dataframe.apply(
+                lambda row: self.record.safe_map(
+                    row, predicted_BGC_type_dict, "BGC_type"
+                ),
+                axis=1,
+            )
+            self.complete_dataframe = self.complete_dataframe.apply(
+                lambda row: self.record.safe_map(
+                    row, score_predicted_BGC_type_dict, "BGC_type_score"
+                ),
+                axis=1,
+            )
 
 
 def main() -> None:
@@ -844,132 +987,23 @@ def main() -> None:
             record = Record(gb_record, args.output[0], device)
 
             # Run HMMER for tailoring enzymes
-            tailoring_enzymes_in_record = {
-                key: record.run_hmmer(key) for key in enzymes
-            }
+            record.get_tailoring_enzymes(hmm_dir)
 
             # Save enzyme sequences to FASTA
             record.save_enzymes_to_fasta()
+            record.align_sequences()
 
-            # Perform MUSCLE alignment
-            alignments = {
-                enzyme: record.muscle_align_sequences(
-                    os.path.join(tmp_dir, f"{enzyme}_tailoring_enzymes.fasta"), enzyme
-                )
-                for enzyme in enzymes
-            }
-
-            # Using AlignmentDataset for processing
-            feature_matrixes = {}
-            for enzyme, alignment in alignments.items():
-                if len(alignment) > 1:
-                    dataset = AlignmentDataset(enzymes, enzyme, alignment)
-                    dataset.filter_alignment()
-                    dataset.fragment_alignment(fastas_aligned_before=True)
-                    feature_matrix = dataset.featurize_fragments(
-                        batch_converter, model, device
-                    )
-                    feature_matrixes[enzyme] = feature_matrix
-                else:
-                    feature_matrixes[enzyme] = pd.DataFrame()
+            record.featurize_alignments(batch_converter, model)
 
             # Predict BGC types and metabolism types
-            predicted_BGC_types = {}
-            scores_predicted_BGC_type = {}
-            predicted_metabolism_types = {}
-            scores_predicted_metabolism = {}
-
-            for key, feature_matrix in feature_matrixes.items():
-                if not feature_matrix.empty:
-                    prediction_BGC = Prediction(
-                        os.path.join(directory_of_classifiers_BGC_type, f"{key}.pth"),
-                        device,
-                    )
-                    predicted_values_BGC, score_predicted_values_BGC = (
-                        prediction_BGC.predict(feature_matrix, "BGC")
-                    )
-                    predicted_BGC_types[key] = predicted_values_BGC
-                    scores_predicted_BGC_type[key] = score_predicted_values_BGC
-
-                    prediction_metabolism = Prediction(
-                        os.path.join(
-                            directory_of_classifiers_NP_affiliation, f"{key}.pth"
-                        ),
-                        device,
-                    )
-                    predicted_values_metabolism, score_predicted_values_metabolism = (
-                        prediction_metabolism.predict(feature_matrix, "metabolism")
-                    )
-                    predicted_metabolism_types[key] = predicted_values_metabolism
-                    scores_predicted_metabolism[key] = score_predicted_values_metabolism
-                else:
-                    predicted_BGC_types[key] = []
-                    scores_predicted_BGC_type[key] = []
-                    predicted_metabolism_types[key] = []
-                    scores_predicted_metabolism[key] = []
+            record.predict_BGC_types(directory_of_classifiers_BGC_type)
+            record.predict_metabolism_types(directory_of_classifiers_NP_affiliation)
 
             # Apply predictions to the dataframe
-            complete_dataframe = pd.concat(
-                [
-                    record.set_dataframe_columns(
-                        record.process_feature_dict(
-                            tailoring_enzymes_in_record[enzyme], enzyme
-                        )
-                    )
-                    for enzyme in enzymes
-                ],
-                axis=0,
-            )
-
-            for enzyme in enzymes:
-                predicted_metabolism_dict = dict(
-                    zip(complete_dataframe.index, predicted_metabolism_types[enzyme])
-                )
-                score_predicted_metabolism_dict = dict(
-                    zip(
-                        complete_dataframe.index,
-                        [scores[1] for scores in scores_predicted_metabolism[enzyme]],
-                    )
-                )
-
-                predicted_BGC_type_dict = dict(
-                    zip(complete_dataframe.index, predicted_BGC_types[enzyme])
-                )
-                score_predicted_BGC_type_dict = dict(
-                    zip(
-                        complete_dataframe.index,
-                        [max(scores) for scores in scores_predicted_BGC_type[enzyme]],
-                    )
-                )
-
-                complete_dataframe = complete_dataframe.apply(
-                    lambda row: record.safe_map(
-                        row, predicted_metabolism_dict, "NP_BGC_affiliation"
-                    ),
-                    axis=1,
-                )
-                complete_dataframe = complete_dataframe.apply(
-                    lambda row: record.safe_map(
-                        row, score_predicted_metabolism_dict, "NP_BGC_affiliation_score"
-                    ),
-                    axis=1,
-                )
-                complete_dataframe = complete_dataframe.apply(
-                    lambda row: record.safe_map(
-                        row, predicted_BGC_type_dict, "BGC_type"
-                    ),
-                    axis=1,
-                )
-                complete_dataframe = complete_dataframe.apply(
-                    lambda row: record.safe_map(
-                        row, score_predicted_BGC_type_dict, "BGC_type_score"
-                    ),
-                    axis=1,
-                )
+            record.concatenate_results()
 
             # Process the dataframe and save results
             results_dict = record.process_dataframe_and_save(
-                complete_dataframe,
                 score_threshold=score_threshold,
             )
 
