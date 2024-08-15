@@ -189,6 +189,7 @@ class PutativeBGC:
         relevant_types = types[0] if self.BGC_type in types[0] else types[1]
 
         for _, row in self.filtered_dataframe.iterrows():
+            print(row)
             adjusted_score = (row["BGC_type_score"] + 0.7) * row[
                 "NP_BGC_affiliation_score"
             ]
@@ -231,6 +232,7 @@ class PutativeBGC:
         Returns:
             SeqFeature: A SeqFeature object representing the BGC.
         """
+        print(9)
         feature = SeqFeature(
             FeatureLocation(
                 start=max(0, self.start), end=min(self.end, len(self.record.record.seq))
@@ -401,6 +403,8 @@ class Record:
             logging.debug("only one CDS")
             window_center = (row["cds_start"] + row["cds_end"]) // 2
             logging.debug(window_center)
+            logging.debug(window_end)
+            logging.debug(trailing_window)
             window_start = max(0, window_center - initial_window // 2)
             window_end = window_center + (initial_window // 2)
         else:
@@ -452,8 +456,9 @@ class Record:
             putative_bgc = self.create_putative_bgc(
                 row, self.complete_dataframe, row["BGC_type"]
             )
+            print(12)
             score, BGC_type = putative_bgc.calculate_score()
-
+            print(14)
             # Normalize score based on length and type
             score = (
                 (score / max(60_000, putative_bgc.end - putative_bgc.start)) * 60_000
@@ -461,7 +466,7 @@ class Record:
                 else (score / max(15_000, putative_bgc.end - putative_bgc.start))
                 * 15_000
             )
-
+            print(score)
             if score >= score_threshold:
                 feature = putative_bgc.create_feature()
                 raw_BGCs.append(
@@ -474,12 +479,15 @@ class Record:
                         "putative_bgc": putative_bgc,
                     }
                 )
+                print(10)
 
+        print(7)
         raw_BGCs.sort(key=lambda x: x["score"], reverse=True)
         filtered_BGCs = []
 
         for annotation in raw_BGCs:
             overlap = False
+            print(8)
             for fa in filtered_BGCs:
                 overlap_percent = self.calculate_overlap(
                     annotation["begin"],
@@ -494,7 +502,7 @@ class Record:
                     break
             if not overlap:
                 filtered_BGCs.append(annotation)
-
+        print(6)
         for BGC in filtered_BGCs:
             feature = BGC["feature"]
             self.record.features.append(feature)
@@ -789,7 +797,6 @@ class Record:
         for enzyme, alignment in self.alignments.items():
             if alignment and len(alignment) > 1:
                 dataset = AlignmentDataset(enzymes, enzyme, alignment)
-                dataset._filter_alignment()
                 dataset.fragment_alignment(fastas_aligned_before=True)
                 feature_matrix = dataset.featurize_fragments(
                     batch_converter, model, self.device
@@ -828,6 +835,7 @@ class Record:
         Predict metabolism types for all enzymes.
         """
         for enzyme, feature_matrix in self.feature_matrixes.items():
+            print(enzyme, feature_matrix)
             if not feature_matrix.empty:
                 classifier_path = os.path.join(
                     directory_of_classifiers_NP_affiliation, f"{enzyme}{enzymes[enzyme]['classifier_metabolism']}"
@@ -841,7 +849,7 @@ class Record:
             else:
                 self.predicted_metabolism_types[enzyme] = []
                 self.scores_predicted_metabolism[enzyme] = []
-    
+        print(self.scores_predicted_metabolism, self.predicted_metabolism_types)
     def concatenate_results(self):
         """
         Concatenate results from all enzymes and set the complete_dataframe.
@@ -852,31 +860,47 @@ class Record:
             self.complete_dataframe = pd.DataFrame()  # Handle empty case
             return
         
-        self.complete_dataframe = pd.concat(
-            [
-                self.set_dataframe_columns(
-                    self.process_feature_dict(self.tailoring_enzymes[enzyme], enzyme)
-                )
-                for enzyme in self.tailoring_enzymes
-                if not self.process_feature_dict(self.tailoring_enzymes[enzyme], enzyme).empty
-            ],
-            axis=0,
-        )
+        enzyme_dataframes_filtered = {}
+        for enzyme in self.tailoring_enzymes:
+            # Process the feature dict for the current enzyme and set the dataframe columns
+            df = self.set_dataframe_columns(self.process_feature_dict(self.tailoring_enzymes[enzyme], enzyme))
+    
+            # Proceed only if the dataframe is not empty
+            if not df.empty:
+                if enzyme == "radical_SAM":
+                    print(df,self.feature_matrixes[enzyme])
+                    print(len(df), len(self.feature_matrixes[enzyme]))
 
+                # Check if the length of the dataframe differs from the feature matrix
+                if len(df) != len(self.feature_matrixes[enzyme]):
+                    print("found")
+                    # Filter the dataframe to include only rows that match the feature matrix indices
+                    
+                    df_filtered = df[df.index.isin(self.feature_matrixes[enzyme].index)]
+                else:
+                    df_filtered = df
+                df_filtered = df_filtered.reindex(self.feature_matrixes[enzyme].index)
+                # Store the filtered dataframe in the dictionary
+                enzyme_dataframes_filtered[enzyme] = df_filtered
+
+        self.complete_dataframe = pd.concat(
+            [enzyme_dataframe for enzyme_dataframe in enzyme_dataframes_filtered.values()],
+            axis=0,
+                )
         if self.complete_dataframe.empty:
             return  # No need to proceed if the dataframe is empty
-
+        
         for enzyme in self.tailoring_enzymes:
             if enzyme in self.predicted_metabolism_types and enzyme in self.scores_predicted_metabolism:
                 predicted_metabolism_dict = dict(
                     zip(self.complete_dataframe.index, self.predicted_metabolism_types.get(enzyme, []))
-                )
+                        )
                 score_predicted_metabolism_dict = dict(
                     zip(
-                        self.complete_dataframe.index,
-                        [scores[1] for scores in self.scores_predicted_metabolism.get(enzyme, [])],
+                                self.complete_dataframe.index,
+                                [scores[1] for scores in self.scores_predicted_metabolism.get(enzyme, [])],
+                        )
                 )
-              )
             else:
                 predicted_metabolism_dict = {}
                 score_predicted_metabolism_dict = {}
@@ -898,7 +922,7 @@ class Record:
             # Apply the safe_map function only if there are values to map
             if predicted_metabolism_dict:
                 self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.record.safe_map(
+                    lambda row: self.safe_map(
                         row, predicted_metabolism_dict, "NP_BGC_affiliation"
                     ),
                     axis=1,
@@ -906,7 +930,7 @@ class Record:
 
             if score_predicted_metabolism_dict:
                 self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.record.safe_map(
+                    lambda row: self.safe_map(
                         row, score_predicted_metabolism_dict, "NP_BGC_affiliation_score"
                     ),
                     axis=1,
@@ -914,7 +938,7 @@ class Record:
 
             if predicted_BGC_type_dict:
                 self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.record.safe_map(
+                    lambda row: self.safe_map(
                         row, predicted_BGC_type_dict, "BGC_type"
                     ),
                     axis=1,
@@ -922,11 +946,12 @@ class Record:
 
             if score_predicted_BGC_type_dict:
                 self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.record.safe_map(
+                    lambda row: self.safe_map(
                         row, score_predicted_BGC_type_dict, "BGC_type_score"
                     ),
                     axis=1,
                 )                
+            print(self.complete_dataframe)
 
 
 def main() -> None:

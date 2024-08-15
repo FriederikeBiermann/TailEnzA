@@ -36,7 +36,7 @@ def process_file(input_file, output_file, device):
             return False, str(e)
 
     success, error_message = run_command(), ""
-    if not suqccess:
+    if not success:
         # Try running the command once more if it fails
         print("Retrying...")
         success, error_message = run_command()
@@ -50,6 +50,8 @@ def process_file(input_file, output_file, device):
 
 def is_valid_directory(subdir):
     files = os.listdir(subdir)
+    if not files:
+        return True
     has_log = 'log.log' in files
     has_csv = any(file.endswith('.csv') for file in files)
     return has_log and not has_csv
@@ -58,6 +60,8 @@ def is_valid_directory(subdir):
 dirs_to_process = []
 for subdir, dirs, files in os.walk(output_root):
     for sub_subdir in dirs:
+        if "tmp" in sub_subdir:
+            continue
         full_sub_subdir_path = os.path.join(subdir, sub_subdir)
         print(full_sub_subdir_path)
         if is_valid_directory(full_sub_subdir_path):
@@ -76,13 +80,14 @@ print(dirs_to_process)
 # Collect all files to process
 file_pairs = []
 for subdir in dirs_to_process:
-    relative_path = os.path.relpath(subdir, input_root)
+    print(subdir)
+    relative_path = os.path.join(*subdir.split('/')[-2:])
     output_subdir = os.path.join(output_root, relative_path)
     
     if not os.path.exists(output_subdir):
         os.makedirs(output_subdir)
 
-    input_file = os.path.join(input_root, relative_path)
+    input_file = os.path.join(input_root, f"{relative_path}.gbff")
     output_file = os.path.join(output_root, relative_path)
     file_pairs.append((input_file, output_file))
 
