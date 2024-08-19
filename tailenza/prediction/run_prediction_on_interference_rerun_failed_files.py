@@ -92,7 +92,6 @@ for subdir in dirs_to_process:
     file_pairs.append((input_file, output_file))
 
 print(file_pairs)
-exit()
 
 device_assignment = [0, 1]  # Assuming you have two devices: cuda:0 and cuda:1
 device_index = 0
