@@ -29,7 +29,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.base import BaseEstimator
 from torch import nn
-from typing import List, Dict, Callable, Tuple, Optional
+from typing import List, Dict, Callable, Tuple, Optional, Any
 
 from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import (
     LSTM,
@@ -197,9 +197,17 @@ class PutativeBGC:
         relevant_types = types[0] if self.BGC_type in types[0] else types[1]
 
         for _, row in self.filtered_dataframe.iterrows():
-            adjusted_score = (row["BGC_type_score"] + 0.7) * row[
-                "NP_BGC_affiliation_score"
-            ]
+            bgc_type_score = row["BGC_type_score"]
+            np_bgc_affiliation_score = row["NP_BGC_affiliation_score"]
+
+            # If bgc_type_score is a list or array, take the maximum value
+            if isinstance(bgc_type_score, (list, np.ndarray)):
+                bgc_type_score = max(bgc_type_score)
+            # If np_bgc_affiliation_score is a list or array, take the first value
+            if isinstance(np_bgc_affiliation_score, (list, np.ndarray)):
+                np_bgc_affiliation_score = np_bgc_affiliation_score[0]
+
+            adjusted_score = (bgc_type_score + 0.7) * np_bgc_affiliation_score
             if row["BGC_type"] == self.BGC_type:
                 score += adjusted_score
             elif row["BGC_type"] in relevant_types:
@@ -212,14 +220,14 @@ class PutativeBGC:
                 and self.BGC_type in types[0]
                 and row["BGC_type"] != self.BGC_type
             ):
-                hybrid_type = f"NRPS/PKS-hybrid"
+                hybrid_type = f"NRPS-PKS-hybrid"
 
             elif (
                 row["BGC_type"] in types[1]
                 and self.BGC_type in types[1]
-                and row["BGC_type"] != self.BGC_types
+                and row["BGC_type"] != self.BGC_type
             ):
-                hybrid_type = f"Terpene/Alkaloid-hybrid"
+                hybrid_type = f"Terpene-Alkaloid-hybrid"
 
         # Normalize score based on length and type
         score = (
@@ -834,7 +842,7 @@ class Record:
                     # Store the results directly
                     self.predicted_BGC_types[enzyme] = {
                         idx: {
-                            "value": result["predicted_values"],
+                            "value": result["predicted_value"],
                             "score": result["score_predicted_values"],
                         }
                         for idx, result in results.items()
@@ -858,7 +866,7 @@ class Record:
                 # Store the results directly
                 self.predicted_metabolism_types[enzyme] = {
                     idx: {
-                        "value": result["predicted_values"],
+                        "value": result["predicted_value"],
                         "score": result["score_predicted_values"],
                     }
                     for idx, result in results.items()
@@ -903,7 +911,7 @@ class Record:
             ]
 
             # Merge the predictions DataFrame with the corresponding tailoring enzymes DataFrame
-            tailoring_df = self.tailoring_enzymes[enzyme]
+            tailoring_df = pd.DataFrame.from_dict(self.tailoring_enzymes[enzyme], orient='index')
             merged_df = tailoring_df.merge(
                 predictions_df, left_index=True, right_index=True, how="inner"
             )
@@ -912,8 +920,10 @@ class Record:
             dataframes.append(merged_df)
 
         # Concatenate all the individual DataFrames into one complete DataFrame
-        self.complete_dataframe = pd.concat(dataframes)
-
+        if dataframes:
+            self.complete_dataframe = pd.concat(dataframes)
+        else:
+            self.complete_dataframe = pd.DataFrame()
 
 def main() -> None:
     """
