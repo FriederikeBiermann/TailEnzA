@@ -246,7 +246,6 @@ class PutativeBGC:
         Returns:
             SeqFeature: A SeqFeature object representing the BGC.
         """
-        print(9)
         feature = SeqFeature(
             FeatureLocation(
                 start=max(0, self.start), end=min(self.end, len(self.record.record.seq))
@@ -470,9 +469,7 @@ class Record:
             putative_bgc = self.create_putative_bgc(
                 row, self.complete_dataframe, row["BGC_type"]
             )
-            print(12)
             score, BGC_type = putative_bgc.calculate_score()
-            print(14)
             # Normalize score based on length and type
             score = (
                 (score / max(60_000, putative_bgc.end - putative_bgc.start)) * 60_000
@@ -480,7 +477,6 @@ class Record:
                 else (score / max(15_000, putative_bgc.end - putative_bgc.start))
                 * 15_000
             )
-            print(score)
             if score >= score_threshold:
                 feature = putative_bgc.create_feature()
                 raw_BGCs.append(
@@ -493,15 +489,11 @@ class Record:
                         "putative_bgc": putative_bgc,
                     }
                 )
-                print(10)
-
-        print(7)
         raw_BGCs.sort(key=lambda x: x["score"], reverse=True)
         filtered_BGCs = []
 
         for annotation in raw_BGCs:
             overlap = False
-            print(8)
             for fa in filtered_BGCs:
                 overlap_percent = self.calculate_overlap(
                     annotation["begin"],
@@ -516,7 +508,6 @@ class Record:
                     break
             if not overlap:
                 filtered_BGCs.append(annotation)
-        print(6)
         for BGC in filtered_BGCs:
             feature = BGC["feature"]
             self.record.features.append(feature)
@@ -759,7 +750,6 @@ class Record:
             "-center",
             str(enzymes[enzyme]["center"]),
         ]
-        print(muscle_cmd)
         try:
             subprocess.check_call(muscle_cmd, stdout=DEVNULL, stderr=DEVNULL)
         except subprocess.CalledProcessError:
@@ -807,7 +797,6 @@ class Record:
         """
         Featurize the alignments for all enzymes.
         """
-        print(self.alignments)
         for enzyme, alignment in self.alignments.items():
             if alignment and len(alignment) > 1:
                 dataset = AlignmentDataset(enzymes, enzyme, alignment)
@@ -911,7 +900,9 @@ class Record:
             ]
 
             # Merge the predictions DataFrame with the corresponding tailoring enzymes DataFrame
-            tailoring_df = pd.DataFrame.from_dict(self.tailoring_enzymes[enzyme], orient='index')
+            tailoring_df = pd.DataFrame.from_dict(
+                self.tailoring_enzymes[enzyme], orient="index"
+            )
             merged_df = tailoring_df.merge(
                 predictions_df, left_index=True, right_index=True, how="inner"
             )
@@ -924,6 +915,7 @@ class Record:
             self.complete_dataframe = pd.concat(dataframes)
         else:
             self.complete_dataframe = pd.DataFrame()
+
 
 def main() -> None:
     """
@@ -1011,27 +1003,19 @@ def main() -> None:
 
             # Run HMMER for tailoring enzymes
             record.get_tailoring_enzymes(hmm_dir)
-            print(record.tailoring_enzymes)
-            print(1)
             # Save enzyme sequences to FASTA
             record.save_enzymes_to_fasta()
-            print(2)
             record.align_sequences()
-            print(1)
             record.featurize_alignments(batch_converter, model)
-            print(1)
             # Predict BGC types and metabolism types
             record.predict_BGC_types(directory_of_classifiers_BGC_type)
             record.predict_metabolism_types(directory_of_classifiers_NP_affiliation)
-            print(3)
             # Apply predictions to the dataframe
             record.concatenate_results()
-            print(4)
             # Process the dataframe and save results
             results_dict = record.process_dataframe_and_save(
                 score_threshold=score_threshold,
             )
-            print(5)
             # Save results to CSV
             result_df = pd.DataFrame(results_dict)
             result_df.to_csv(
