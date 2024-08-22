@@ -109,16 +109,16 @@ class Predictor:
 
     def predict(
         self, feature_matrix: pd.DataFrame, mode: str
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Dict[str, Dict[str, Any]]:
         """
         Predict values using the classifier.
 
         Args:
-            feature_matrix (pd.DataFrame): The feature matrix to use for predictions.
+            feature_matrix (pd.DataFrame): The feature matrix to use for predictions. The index of this DataFrame should contain the enzyme names.
             mode (str): The prediction mode ('metabolism' or 'BGC').
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Predicted values and their associated scores.
+            Dict[str, Dict[str, Any]]: A dictionary where each key is an enzyme name, and each value is another dictionary containing the 'predicted_value' and 'score_predicted_values'.
         """
         if mode == "metabolism":
             self.label_encoder.classes_ = np.array(
@@ -154,7 +154,15 @@ class Predictor:
             predicted_values = self.classifier.predict(feature_matrix)
             score_predicted_values = self.classifier.predict_proba(feature_matrix)
 
-        return predicted_values, score_predicted_values
+        # Creating the result dictionary
+        result = {}
+        for idx, enzyme_name in enumerate(feature_matrix.index):
+            result[enzyme_name] = {
+                "predicted_value": predicted_values[idx],
+                "score_predicted_values": score_predicted_values[idx],
+            }
+
+        return result
 
 
 class PutativeBGC:
@@ -189,7 +197,6 @@ class PutativeBGC:
         relevant_types = types[0] if self.BGC_type in types[0] else types[1]
 
         for _, row in self.filtered_dataframe.iterrows():
-            print(row)
             adjusted_score = (row["BGC_type_score"] + 0.7) * row[
                 "NP_BGC_affiliation_score"
             ]
@@ -205,24 +212,23 @@ class PutativeBGC:
                 and self.BGC_type in types[0]
                 and row["BGC_type"] != self.BGC_type
             ):
-                hybrid_type = (
-                    f"{self.BGC_type}/PKS-hybrid"
-                    if self.BGC_type == "NRPS"
-                    else f"NRPS/{self.BGC_type}-hybrid"
-                )
+                hybrid_type = f"NRPS/PKS-hybrid"
+
             elif (
                 row["BGC_type"] in types[1]
                 and self.BGC_type in types[1]
-                and row["BGC_type"] != self.BGC_type
+                and row["BGC_type"] != self.BGC_types
             ):
-                hybrid_type = (
-                    f"{self.BGC_type}/Alkaloid-hybrid"
-                    if self.BGC_type == "Terpene"
-                    else f"Terpene/{self.BGC_type}-hybrid"
-                )
+                hybrid_type = f"Terpene/Alkaloid-hybrid"
 
-        self.score = round(score, 3)
+        # Normalize score based on length and type
+        score = (
+            (score / max(60_000, self.end - self.start)) * 60_000
+            if self.BGC_type in ["NRPS", "PKS"]
+            else (score / max(15_000, self.end - self.start)) * 15_000
+        )
         self.BGC_type = hybrid_type if hybrid_type else self.BGC_type
+        self.score = round(score, 3)
         return self.score, self.BGC_type
 
     def create_feature(self) -> SeqFeature:
@@ -353,17 +359,17 @@ class Record:
         Returns:
             Tuple[int, int]: The start and end of the adjusted window.
         """
-        primary_types = ["NRPS", "PKS"]
-        secondary_types = ["Terpene", "Alkaloid"]
+        long_BGC_types = ["NRPS", "PKS"]
+        short_BGC_types = ["Terpene", "Alkaloid"]
 
-        if row["BGC_type"] in primary_types:
+        if row["BGC_type"] in long_BGC_types:
             initial_window = 60000
             trailing_window = 15000
-            relevant_types = primary_types
-        elif row["BGC_type"] in secondary_types:
+            relevant_types = long_BGC_types
+        elif row["BGC_type"] in short_BGC_types:
             initial_window = 15000
             trailing_window = 5000
-            relevant_types = secondary_types
+            relevant_types = short_BGC_types
         else:
             initial_window = 15000
             trailing_window = 5000
@@ -530,7 +536,7 @@ class Record:
         """
         df = pd.DataFrame()
         for enzyme in enzymes:
-            results = self.run_hmmer(enzyme,  hmm_dir)
+            results = self.run_hmmer(enzyme, hmm_dir)
 
     def run_hmmer(self, enzyme: str, hmm_dir: str) -> Dict[str, Dict[str, str]]:
         """
@@ -809,149 +815,104 @@ class Record:
         """
         Predict BGC types for all enzymes.
         """
-        print(self.feature_matrixes)
         for enzyme, feature_matrix in self.feature_matrixes.items():
             if not feature_matrix.empty:
                 if enzyme == "ycao":
-                        self.predicted_BGC_types[enzyme] = ["RiPP"] * len(feature_matrix)
-                        self.scores_predicted_BGC_type[enzyme] = [[1]] * len(feature_matrix)
+                    self.predicted_BGC_types[enzyme] = {
+                        idx: {"value": "RiPP", "score": [1]}
+                        for idx in feature_matrix.index
+                    }
                 else:
                     classifier_path = os.path.join(
-                        directory_of_classifiers_BGC_type, f"{enzyme}{enzymes[enzyme]['classifier_BGC_type']}"
+                        directory_of_classifiers_BGC_type,
+                        f"{enzyme}{enzymes[enzyme]['classifier_BGC_type']}",
                     )
-                    
+
                     prediction = Predictor(classifier_path, self.device)
-                    predicted_values, score_predicted_values = prediction.predict(
-                        feature_matrix, mode="BGC"
-                    )
-                    self.predicted_BGC_types[enzyme] = predicted_values
-                    self.scores_predicted_BGC_type[enzyme] = score_predicted_values
+                    results = prediction.predict(feature_matrix, mode="BGC")
+
+                    # Store the results directly
+                    self.predicted_BGC_types[enzyme] = {
+                        idx: {
+                            "value": result["predicted_values"],
+                            "score": result["score_predicted_values"],
+                        }
+                        for idx, result in results.items()
+                    }
             else:
-                self.predicted_BGC_types[enzyme] = []
-                self.scores_predicted_BGC_type[enzyme] = []
+                self.predicted_BGC_types[enzyme] = {}
 
     def predict_metabolism_types(self, directory_of_classifiers_NP_affiliation: str):
         """
         Predict metabolism types for all enzymes.
         """
         for enzyme, feature_matrix in self.feature_matrixes.items():
-            print(enzyme, feature_matrix)
             if not feature_matrix.empty:
                 classifier_path = os.path.join(
-                    directory_of_classifiers_NP_affiliation, f"{enzyme}{enzymes[enzyme]['classifier_metabolism']}"
+                    directory_of_classifiers_NP_affiliation,
+                    f"{enzyme}{enzymes[enzyme]['classifier_metabolism']}",
                 )
                 prediction = Predictor(classifier_path, self.device)
-                predicted_values, score_predicted_values = prediction.predict(
-                    feature_matrix, mode="metabolism"
-                )
-                self.predicted_metabolism_types[enzyme] = predicted_values
-                self.scores_predicted_metabolism[enzyme] = score_predicted_values
+                results = prediction.predict(feature_matrix, mode="metabolism")
+
+                # Store the results directly
+                self.predicted_metabolism_types[enzyme] = {
+                    idx: {
+                        "value": result["predicted_values"],
+                        "score": result["score_predicted_values"],
+                    }
+                    for idx, result in results.items()
+                }
             else:
-                self.predicted_metabolism_types[enzyme] = []
-                self.scores_predicted_metabolism[enzyme] = []
-        print(self.scores_predicted_metabolism, self.predicted_metabolism_types)
+                self.predicted_metabolism_types[enzyme] = {}
+
     def concatenate_results(self):
         """
-        Concatenate results from all enzymes and set the complete_dataframe.
+        Concatenate results from all enzymes into a single DataFrame, including predicted values and scores,
+        and merge with tailoring enzymes DataFrame based on the index.
         """
-        print(all(not value for value in self.tailoring_enzymes.values()))
-        print([not value for value in self.tailoring_enzymes.values()])
-        if not self.tailoring_enzymes or  all(not value for value in self.tailoring_enzymes.values()):
-            self.complete_dataframe = pd.DataFrame()  # Handle empty case
-            return
-        
-        enzyme_dataframes_filtered = {}
-        for enzyme in self.tailoring_enzymes:
-            # Process the feature dict for the current enzyme and set the dataframe columns
-            df = self.set_dataframe_columns(self.process_feature_dict(self.tailoring_enzymes[enzyme], enzyme))
-    
-            # Proceed only if the dataframe is not empty
-            if not df.empty:
-                if enzyme == "radical_SAM":
-                    print(df,self.feature_matrixes[enzyme])
-                    print(len(df), len(self.feature_matrixes[enzyme]))
+        # Initialize an empty list to hold individual DataFrames
+        dataframes = []
 
-                # Check if the length of the dataframe differs from the feature matrix
-                if len(df) != len(self.feature_matrixes[enzyme]):
-                    print("found")
-                    # Filter the dataframe to include only rows that match the feature matrix indices
-                    
-                    df_filtered = df[df.index.isin(self.feature_matrixes[enzyme].index)]
-                else:
-                    df_filtered = df
-                df_filtered = df_filtered.reindex(self.feature_matrixes[enzyme].index)
-                # Store the filtered dataframe in the dictionary
-                enzyme_dataframes_filtered[enzyme] = df_filtered
+        for enzyme, feature_matrix in self.feature_matrixes.items():
+            if enzyme not in self.tailoring_enzymes or feature_matrix.empty:
+                continue
 
-        self.complete_dataframe = pd.concat(
-            [enzyme_dataframe for enzyme_dataframe in enzyme_dataframes_filtered.values()],
-            axis=0,
-                )
-        if self.complete_dataframe.empty:
-            return  # No need to proceed if the dataframe is empty
-        
-        for enzyme in self.tailoring_enzymes:
-            if enzyme in self.predicted_metabolism_types and enzyme in self.scores_predicted_metabolism:
-                predicted_metabolism_dict = dict(
-                    zip(self.complete_dataframe.index, self.predicted_metabolism_types.get(enzyme, []))
-                        )
-                score_predicted_metabolism_dict = dict(
-                    zip(
-                                self.complete_dataframe.index,
-                                [scores[1] for scores in self.scores_predicted_metabolism.get(enzyme, [])],
-                        )
-                )
-            else:
-                predicted_metabolism_dict = {}
-                score_predicted_metabolism_dict = {}
-    
-            if enzyme in self.predicted_BGC_types and enzyme in self.scores_predicted_BGC_type:
-                predicted_BGC_type_dict = dict(
-                    zip(self.complete_dataframe.index, self.predicted_BGC_types.get(enzyme, []))
-                )
-                score_predicted_BGC_type_dict = dict(
-                    zip(
-                        self.complete_dataframe.index,
-                        [max(scores) for scores in self.scores_predicted_BGC_type.get(enzyme, [])],
-                    )
-                )
-            else:
-                predicted_BGC_type_dict = {}
-                score_predicted_BGC_type_dict = {}
+            # Create a DataFrame for the current enzyme's predictions
+            predictions_df = pd.DataFrame(index=feature_matrix.index)
+            predictions_df["enzyme"] = enzyme  # Add the enzyme type as a column
 
-            # Apply the safe_map function only if there are values to map
-            if predicted_metabolism_dict:
-                self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.safe_map(
-                        row, predicted_metabolism_dict, "NP_BGC_affiliation"
-                    ),
-                    axis=1,
-                )
+            # Populate the DataFrame with BGC type predictions and scores
+            predictions_df["BGC_type"] = [
+                self.predicted_BGC_types[enzyme].get(idx, {}).get("value", "")
+                for idx in feature_matrix.index
+            ]
+            predictions_df["BGC_type_score"] = [
+                self.predicted_BGC_types[enzyme].get(idx, {}).get("score", "")
+                for idx in feature_matrix.index
+            ]
 
-            if score_predicted_metabolism_dict:
-                self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.safe_map(
-                        row, score_predicted_metabolism_dict, "NP_BGC_affiliation_score"
-                    ),
-                    axis=1,
-                )
+            # Populate the DataFrame with metabolism type predictions and scores
+            predictions_df["NP_BGC_affiliation"] = [
+                self.predicted_metabolism_types[enzyme].get(idx, {}).get("value", "")
+                for idx in feature_matrix.index
+            ]
+            predictions_df["NP_BGC_affiliation_score"] = [
+                self.predicted_metabolism_types[enzyme].get(idx, {}).get("score", "")
+                for idx in feature_matrix.index
+            ]
 
-            if predicted_BGC_type_dict:
-                self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.safe_map(
-                        row, predicted_BGC_type_dict, "BGC_type"
-                    ),
-                    axis=1,
-                )
+            # Merge the predictions DataFrame with the corresponding tailoring enzymes DataFrame
+            tailoring_df = self.tailoring_enzymes[enzyme]
+            merged_df = tailoring_df.merge(
+                predictions_df, left_index=True, right_index=True, how="inner"
+            )
 
-            if score_predicted_BGC_type_dict:
-                self.complete_dataframe = self.complete_dataframe.apply(
-                    lambda row: self.safe_map(
-                        row, score_predicted_BGC_type_dict, "BGC_type_score"
-                    ),
-                    axis=1,
-                )                
-            print(self.complete_dataframe)
+            # Append the merged DataFrame to the list
+            dataframes.append(merged_df)
+
+        # Concatenate all the individual DataFrames into one complete DataFrame
+        self.complete_dataframe = pd.concat(dataframes)
 
 
 def main() -> None:
@@ -1048,7 +1009,7 @@ def main() -> None:
             record.align_sequences()
             print(1)
             record.featurize_alignments(batch_converter, model)
-            print(1) 
+            print(1)
             # Predict BGC types and metabolism types
             record.predict_BGC_types(directory_of_classifiers_BGC_type)
             record.predict_metabolism_types(directory_of_classifiers_NP_affiliation)
