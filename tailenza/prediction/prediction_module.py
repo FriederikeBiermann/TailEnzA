@@ -246,7 +246,6 @@ class PutativeBGC:
         Returns:
             SeqFeature: A SeqFeature object representing the BGC.
         """
-        print(9)
         feature = SeqFeature(
             FeatureLocation(
                 start=max(0, self.start), end=min(self.end, len(self.record.record.seq))
@@ -263,7 +262,7 @@ class PutativeBGC:
         self, output_path: str, filename: Optional[str] = None
     ) -> str:
         """
-        Write the BGC to a GenBank file.
+        Write the BGC to a GenBank file along with predicted enzyme features.
 
         Args:
             output_path (str): Directory where the GenBank file will be saved.
@@ -281,6 +280,38 @@ class PutativeBGC:
             max(0, self.start) : min(self.end, len(self.record.record.seq))
         ]
         BGC_record.annotations["molecule_type"] = "dna"
+
+        # Add the main BGC feature
+        feature = SeqFeature(
+            FeatureLocation(
+                start=max(0, self.start), end=min(self.end, len(self.record.record.seq))
+            ),
+            type="misc_feature",
+            qualifiers={
+                "label": f"Score: {self.score} {self.BGC_type}",
+                "note": "Predicted using Tailenza 1.0.0",
+            },
+        )
+        BGC_record.features.append(feature)
+
+        # Add predicted enzyme features
+        for _, row in self.filtered_dataframe.iterrows():
+            enzyme_feature = SeqFeature(
+                FeatureLocation(
+                    start=row['cds_start'],
+                    end=row['cds_end']
+                ),
+                type="CDS",  # You can adjust the feature type if needed
+                qualifiers={
+                    "label": f"Enzyme: {row['enzyme']}",
+                    "product": row['product'],
+                    "predicted_BGC_type": row['BGC_type'],
+                    "predicted_BGC_score": str(row['BGC_type_score']),
+                    "predicted_metabolism_type": row['NP_BGC_affiliation'],
+                    "predicted_metabolism_score": str(row['NP_BGC_affiliation_score']),
+                }
+            )
+            BGC_record.features.append(enzyme_feature)
 
         output_file = os.path.join(output_path, filename)
         SeqIO.write(BGC_record, output_file, "gb")
@@ -457,7 +488,6 @@ class Record:
         Process the dataframe, filter based on score, and save results.
 
         Args:
-            complete_dataframe (pd.DataFrame): The complete dataframe with all features.
             score_threshold (float, optional): The minimum score threshold for saving. Defaults to 0.
 
         Returns:
@@ -466,21 +496,20 @@ class Record:
         results_dict = {}
         raw_BGCs = []
 
+        # Step 1: Collect and process BGC features
         for _, row in self.complete_dataframe.iterrows():
             putative_bgc = self.create_putative_bgc(
                 row, self.complete_dataframe, row["BGC_type"]
             )
-            print(12)
             score, BGC_type = putative_bgc.calculate_score()
-            print(14)
+
             # Normalize score based on length and type
             score = (
                 (score / max(60_000, putative_bgc.end - putative_bgc.start)) * 60_000
                 if BGC_type in ["NRPS", "PKS"]
-                else (score / max(15_000, putative_bgc.end - putative_bgc.start))
-                * 15_000
+                else (score / max(15_000, putative_bgc.end - putative_bgc.start)) * 15_000
             )
-            print(score)
+            
             if score >= score_threshold:
                 feature = putative_bgc.create_feature()
                 raw_BGCs.append(
@@ -493,15 +522,12 @@ class Record:
                         "putative_bgc": putative_bgc,
                     }
                 )
-                print(10)
-
-        print(7)
+        # Step 2: Filter overlapping BGC features
         raw_BGCs.sort(key=lambda x: x["score"], reverse=True)
         filtered_BGCs = []
 
         for annotation in raw_BGCs:
             overlap = False
-            print(8)
             for fa in filtered_BGCs:
                 overlap_percent = self.calculate_overlap(
                     annotation["begin"],
@@ -516,11 +542,10 @@ class Record:
                     break
             if not overlap:
                 filtered_BGCs.append(annotation)
-        print(6)
+        # Step 3: Write features to the record
         for BGC in filtered_BGCs:
             feature = BGC["feature"]
             self.record.features.append(feature)
-
             output_path = os.path.join(self.output_dir, BGC["BGC_type"])
             os.makedirs(output_path, exist_ok=True)
 
@@ -534,6 +559,29 @@ class Record:
                 "score": BGC["score"],
                 "filename": os.path.basename(genbank_file_path),
             }
+
+        # Step 4: Add enzyme features to the record
+        for _, row in self.complete_dataframe.iterrows():
+            enzyme_feature = SeqFeature(
+                FeatureLocation(
+                    start=row['cds_start'],
+                    end=row['cds_end']
+                ),
+                type="CDS",
+                qualifiers={
+                    "label": f"Enzyme: {row['enzyme']}",
+                    "product": row['product'],
+                    "predicted_BGC_type": row['BGC_type'],
+                    "predicted_BGC_score": str(row['BGC_type_score']),
+                    "predicted_metabolism_type": row['NP_BGC_affiliation'],
+                    "predicted_metabolism_score": str(row['NP_BGC_affiliation_score']),
+                }
+            )
+            self.record.features.append(enzyme_feature)
+
+        # Step 5: Write the full record with all features to a GenBank file
+        full_output_path = os.path.join(self.output_dir, f"{self.record.id}_full.gb")
+        SeqIO.write(self.record, full_output_path, "genbank")
 
         return results_dict
 
@@ -759,7 +807,6 @@ class Record:
             "-center",
             str(enzymes[enzyme]["center"]),
         ]
-        print(muscle_cmd)
         try:
             subprocess.check_call(muscle_cmd, stdout=DEVNULL, stderr=DEVNULL)
         except subprocess.CalledProcessError:
@@ -807,7 +854,6 @@ class Record:
         """
         Featurize the alignments for all enzymes.
         """
-        print(self.alignments)
         for enzyme, alignment in self.alignments.items():
             if alignment and len(alignment) > 1:
                 dataset = AlignmentDataset(enzymes, enzyme, alignment)
@@ -1011,27 +1057,19 @@ def main() -> None:
 
             # Run HMMER for tailoring enzymes
             record.get_tailoring_enzymes(hmm_dir)
-            print(record.tailoring_enzymes)
-            print(1)
             # Save enzyme sequences to FASTA
             record.save_enzymes_to_fasta()
-            print(2)
             record.align_sequences()
-            print(1)
             record.featurize_alignments(batch_converter, model)
-            print(1)
             # Predict BGC types and metabolism types
             record.predict_BGC_types(directory_of_classifiers_BGC_type)
             record.predict_metabolism_types(directory_of_classifiers_NP_affiliation)
-            print(3)
             # Apply predictions to the dataframe
             record.concatenate_results()
-            print(4)
             # Process the dataframe and save results
             results_dict = record.process_dataframe_and_save(
                 score_threshold=score_threshold,
             )
-            print(5)
             # Save results to CSV
             result_df = pd.DataFrame(results_dict)
             result_df.to_csv(
