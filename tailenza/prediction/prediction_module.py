@@ -502,14 +502,12 @@ class Record:
                 row, self.complete_dataframe, row["BGC_type"]
             )
             score, BGC_type = putative_bgc.calculate_score()
-
             # Normalize score based on length and type
             score = (
                 (score / max(60_000, putative_bgc.end - putative_bgc.start)) * 60_000
                 if BGC_type in ["NRPS", "PKS"]
                 else (score / max(15_000, putative_bgc.end - putative_bgc.start)) * 15_000
             )
-            
             if score >= score_threshold:
                 feature = putative_bgc.create_feature()
                 raw_BGCs.append(
@@ -957,7 +955,9 @@ class Record:
             ]
 
             # Merge the predictions DataFrame with the corresponding tailoring enzymes DataFrame
-            tailoring_df = pd.DataFrame.from_dict(self.tailoring_enzymes[enzyme], orient='index')
+            tailoring_df = pd.DataFrame.from_dict(
+                self.tailoring_enzymes[enzyme], orient="index"
+            )
             merged_df = tailoring_df.merge(
                 predictions_df, left_index=True, right_index=True, how="inner"
             )
@@ -970,6 +970,7 @@ class Record:
             self.complete_dataframe = pd.concat(dataframes)
         else:
             self.complete_dataframe = pd.DataFrame()
+
 
 def main() -> None:
     """
