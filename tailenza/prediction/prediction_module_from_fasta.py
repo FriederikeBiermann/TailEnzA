@@ -23,13 +23,10 @@ import logging
 from importlib.resources import files
 import torch.nn as nn
 import torch.nn.functional as F
-from tailenza.classifiers.preprocessing.feature_generation import (
-    fragment_alignment,
-    featurize_fragments,
-)
+from tailenza.classifiers.preprocessing.feature_generation import AlignmentDataset
 from tailenza.data.enzyme_information import enzymes, BGC_types
 
-from tailenza.classifiers.machine_learning.machine_learning_training_classifiers_AA_BGC_type import (
+from tailenza.classifiers.machine_learning.classifiers import (
     LSTM,
     BasicFFNN,
     IntermediateFFNN,
@@ -216,16 +213,9 @@ def process_batch(
         SeqIO.write(batch, output_handle, "fasta")
 
     alignment = muscle_align_sequences(temp_fasta_filename, enzyme, enzymes)
-    fragment_matrix = fragment_alignment(
-        alignment, enzymes[enzyme]["splitting_list"], True
-    )
-    feature_matrix = featurize_fragments(
-        fragment_matrix,
-        batch_converter,
-        model,
-        include_charge_features,
-        device,
-    )
+    dataset = AlignmentDataset(enzymes, enzyme, alignment)
+    fragment_matrix = dataset.fragment_alignment(fastas_aligned_before=True)
+    feature_matrix = dataset.featurize_fragments(batch_converter, model, device)
     os.remove(temp_fasta_filename)
     return feature_matrix
 
