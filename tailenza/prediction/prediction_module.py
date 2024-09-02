@@ -167,7 +167,7 @@ class Predictor:
 
 class PutativeBGC:
     def __init__(
-        self, filtered_dataframe: pd.DataFrame, record: "Record", BGC_type: str
+        self, filtered_dataframe: pd.DataFrame, record: "Record", BGC_type: str, start: int, end: int
     ):
         """
         Initialize the PutativeBGC class.
@@ -179,8 +179,8 @@ class PutativeBGC:
         """
         self.filtered_dataframe = filtered_dataframe
         self.record = record
-        self.start = int(self.filtered_dataframe["cds_start"].min())
-        self.end = int(self.filtered_dataframe["cds_end"].max())
+        self.start = start
+        self.end = end
         self.BGC_type = BGC_type
         self.score = 0.0
 
@@ -382,7 +382,7 @@ class Record:
             (complete_dataframe["cds_start"] >= window_start)
             & (complete_dataframe["cds_end"] <= window_end)
         ]
-        return PutativeBGC(filtered_dataframe, self, BGC_type)
+        return PutativeBGC(filtered_dataframe, self, BGC_type, window_start, window_end)
 
     def adjust_window_size(
         self, row: pd.Series, complete_dataframe: pd.DataFrame, len_record: int
