@@ -65,6 +65,8 @@ setuptools.setup(
         "pandas==2.2.2",
         "fair-esm==2.0.0",
         "torch==2.3.0",
+        "matplotlib==3.8.3",
+        "requests==2.31.0",
     ],
     packages=find_packages()
 )
