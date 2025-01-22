@@ -281,37 +281,6 @@ class PutativeBGC:
         ]
         BGC_record.annotations["molecule_type"] = "dna"
 
-        # Add the main BGC feature
-        feature = SeqFeature(
-            FeatureLocation(
-                start=max(0, self.start), end=min(self.end, len(self.record.record.seq))
-            ),
-            type="misc_feature",
-            qualifiers={
-                "label": f"Score: {self.score} {self.BGC_type}",
-                "note": "Predicted using Tailenza 1.0.0",
-            },
-        )
-        BGC_record.features.append(feature)
-
-        # Add predicted enzyme features
-        for _, row in self.filtered_dataframe.iterrows():
-            enzyme_feature = SeqFeature(
-                FeatureLocation(
-                    start=row['cds_start'],
-                    end=row['cds_end']
-                ),
-                type="CDS",  # You can adjust the feature type if needed
-                qualifiers={
-                    "label": f"Enzyme: {row['enzyme']}",
-                    "product": row['product'],
-                    "predicted_BGC_type": row['BGC_type'],
-                    "predicted_BGC_score": str(row['BGC_type_score']),
-                    "predicted_metabolism_type": row['NP_BGC_affiliation'],
-                    "predicted_metabolism_score": str(row['NP_BGC_affiliation_score']),
-                }
-            )
-            BGC_record.features.append(enzyme_feature)
 
         output_file = os.path.join(output_path, filename)
         SeqIO.write(BGC_record, output_file, "gb")
@@ -508,6 +477,7 @@ class Record:
                 if BGC_type in ["NRPS", "PKS"]
                 else (score / max(15_000, putative_bgc.end - putative_bgc.start)) * 15_000
             )
+            logging.debug(f"Score {score}")
             if score >= score_threshold:
                 feature = putative_bgc.create_feature()
                 raw_BGCs.append(
@@ -540,7 +510,27 @@ class Record:
                     break
             if not overlap:
                 filtered_BGCs.append(annotation)
-        # Step 3: Write features to the record
+        # Add enzyme features to the record
+        for _, row in self.complete_dataframe.iterrows():
+            enzyme_feature = SeqFeature(
+                FeatureLocation(
+                    start=row['cds_start']-1,
+                    end=row['cds_end'],
+                    strand=
+                ),
+                type="CDS",
+                qualifiers={
+                    "label": f"Enzyme: {row['enzyme']}",
+                    "product": row['product'],
+                    "predicted_BGC_type": row['BGC_type'],
+                    "predicted_BGC_score": str(row['BGC_type_score']),
+                    "predicted_metabolism_type": row['NP_BGC_affiliation'],
+                    "predicted_metabolism_score": str(row['NP_BGC_affiliation_score']),
+                }
+            )
+            self.record.features.append(enzyme_feature)
+
+        # Write features to the record
         for BGC in filtered_BGCs:
             feature = BGC["feature"]
             self.record.features.append(feature)
@@ -558,24 +548,6 @@ class Record:
                 "filename": os.path.basename(genbank_file_path),
             }
 
-        # Step 4: Add enzyme features to the record
-        for _, row in self.complete_dataframe.iterrows():
-            enzyme_feature = SeqFeature(
-                FeatureLocation(
-                    start=row['cds_start'],
-                    end=row['cds_end']
-                ),
-                type="CDS",
-                qualifiers={
-                    "label": f"Enzyme: {row['enzyme']}",
-                    "product": row['product'],
-                    "predicted_BGC_type": row['BGC_type'],
-                    "predicted_BGC_score": str(row['BGC_type_score']),
-                    "predicted_metabolism_type": row['NP_BGC_affiliation'],
-                    "predicted_metabolism_score": str(row['NP_BGC_affiliation_score']),
-                }
-            )
-            self.record.features.append(enzyme_feature)
 
         # Step 5: Write the full record with all features to a GenBank file
         full_output_path = os.path.join(self.output_dir, f"{self.record.id}_full.gb")
