@@ -67,6 +67,7 @@ setuptools.setup(
         "torch==2.3.0",
         "matplotlib==3.8.3",
         "requests==2.31.0",
+        "pyhmmer==0.11.0"
     ],
     packages=find_packages()
 )
