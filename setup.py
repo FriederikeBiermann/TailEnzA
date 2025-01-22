@@ -67,7 +67,10 @@ setuptools.setup(
         "torch==2.3.0",
         "matplotlib==3.8.3",
         "requests==2.31.0",
-        "pyhmmer==0.11.0"
+        "pyhmmer==0.11.0",
+        "seaborn==0.13.2",
+        "tensorboard==2.18.0"
+    
     ],
     packages=find_packages()
 )
