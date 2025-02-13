@@ -515,8 +515,7 @@ class Record:
             enzyme_feature = SeqFeature(
                 FeatureLocation(
                     start=row['cds_start']-1,
-                    end=row['cds_end'],
-                    strand=
+                    end=row['cds_end']
                 ),
                 type="CDS",
                 qualifiers={
