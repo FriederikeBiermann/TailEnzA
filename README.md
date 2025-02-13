@@ -29,6 +29,7 @@ $ conda activate TailEnzA
 ### 3. Install TailEnzA and Dependencies
 Install the package and dependencies:
 ```bash
+$ apt install muscle3
 $ pip install .
 ```
 
