@@ -5,8 +5,8 @@ import subprocess
 import concurrent.futures
 
 # Define the root directory for input and output
-input_root = 'interference_dataset/output'
-output_root = 'interference_dataset/Output'
+input_root = 'interference_dataset/gut_microbiome/gut_microbiome_genbank_files'
+output_root = 'interference_dataset/gut_microbiome/tailenza_output'
 failed_files_log = 'failed_files.txt'
 
 # Create the output root directory if it doesn't exist
@@ -87,8 +87,8 @@ for subdir in dirs_to_process:
     if not os.path.exists(output_subdir):
         os.makedirs(output_subdir)
 
-    input_file = os.path.join(input_root, f"{relative_path}.gbff")
-    output_file = os.path.join(output_root, relative_path)
+    input_file = os.path.join(input_root, f"{relative_path}.gbk")
+    output_file = os.path.join(output_root, f"{relative_path}_genomic")
     file_pairs.append((input_file, output_file))
 
 print(file_pairs)

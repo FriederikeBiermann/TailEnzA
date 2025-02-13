@@ -4,8 +4,9 @@ import subprocess
 import concurrent.futures
 
 # Define the root directory for input and output
-input_root = 'interference_dataset/output'
-output_root = 'interference_dataset/Output'
+input_root = '/lustre/BIF/nobackup/bierm010/TailEnzA/tailenza/prediction/thao/annotated_files'
+output_root = '/lustre/BIF/nobackup/bierm010/TailEnzA/tailenza/prediction/thao/tailenza_output'
+
 failed_files_log = 'failed_files.txt'
 
 # Create the output root directory if it doesn't exist
@@ -65,7 +66,7 @@ device_assignment = [0, 1]  # Assuming you have two devices: cuda:0 and cuda:1
 device_index = 0
 # Use ThreadPoolExecutor to process files with multiple workers
 failed_files = []
-with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
     futures = []
     for input_file, output_file in file_pairs:
         device = device_assignment[device_index % len(device_assignment)]
